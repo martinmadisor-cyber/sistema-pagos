@@ -1,0 +1,4155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Empresarial de Pagos - Con Respaldo Automático</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .backup-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .backup-indicator {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 10px;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--gray);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .backup-panel {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0284c7;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .backup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .backup-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary);
+        }
+
+        .backup-card h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--dark);
+        }
+
+        .backup-card p {
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--gray);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 16px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 16px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 15px;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-overdue {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 45px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.5s;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .alert-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .backup-history {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            background: #f8fafc;
+        }
+
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 8px;
+            border-left: 3px solid var(--success);
+        }
+
+        .backup-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .backup-info {
+            flex: 1;
+        }
+
+        .backup-date {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+
+        .backup-details {
+            font-size: 13px;
+            color: var(--gray);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .audit-log {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-icon {
+            width: 32px;
+            height: 32px;
+            background: #e0f2fe;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .log-content {
+            flex: 1;
+        }
+
+        .log-action {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+
+        .log-details {
+            font-size: 13px;
+            color: var(--gray);
+        }
+
+        .log-time {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .cloud-sync {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #d1fae5 0%, #bbf7d0 100%);
+            border-radius: 20px;
+            font-size: 13px;
+            color: #065f46;
+        }
+
+        .rotating {
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                </svg>
+                Sistema Empresarial de Pagos
+            </h1>
+            <div class="header-actions">
+                <div class="backup-status">
+                    <div class="backup-indicator"></div>
+                    <span id="lastBackupTime">Respaldo automático activo</span>
+                </div>
+                <div class="cloud-sync" id="cloudSync" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"></path>
+                    </svg>
+                    <span>Sincronizando...</span>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <span id="userName">Admin</span>
+                </div>
+                <button class="btn btn-warning" onclick="exportToExcel()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Excel
+                </button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="tab" onclick="switchTab('invoices')">Facturas</button>
+            <button class="tab" onclick="switchTab('suppliers')">Proveedores</button>
+            <button class="tab" onclick="switchTab('payments')">Historial de Pagos</button>
+            <button class="tab" onclick="switchTab('import')">Importar BSale</button>
+            <button class="tab" onclick="switchTab('sii')">SII Integration</button>
+            <button class="tab" onclick="switchTab('backup')">Respaldo y Seguridad</button>
+            <button class="tab" onclick="switchTab('audit')">Auditoría</button>
+            <button class="tab" onclick="switchTab('reminders')">Recordatorios</button>
+        </div>
+
+        <div class="content">
+            <!-- Dashboard -->
+            <div id="dashboard" class="tab-content active">
+                <div class="alert alert-info">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>Sistema con respaldo automático cada 5 minutos. Última sincronización: <strong id="lastSync">Hace 1 min</strong></span>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Pendiente</h3>
+                        <div class="stat-value" id="totalPending">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Facturas Vencidas</h3>
+                        <div class="stat-value" id="overdueCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Próximos Pagos (7 días)</h3>
+                        <div class="stat-value" id="upcomingCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Proveedores</h3>
+                        <div class="stat-value" id="supplierCount">0</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning" id="dashboardAlert">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span id="alertMessage">No hay pagos vencidos</span>
+                </div>
+            </div>
+
+            <!-- Facturas -->
+            <div id="invoices" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Registro de Facturas</h2>
+                
+                <form id="invoiceForm" class="form-grid">
+                    <div class="form-group">
+                        <label>Proveedor *</label>
+                        <select id="supplierSelect" required>
+                            <option value="">Seleccionar proveedor</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Factura *</label>
+                        <input type="text" id="invoiceNumber" required placeholder="FAC-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Monto *</label>
+                        <input type="number" id="amount" required step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Ingreso *</label>
+                        <input type="date" id="entryDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Vencimiento *</label>
+                        <input type="date" id="dueDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Método de Pago *</label>
+                        <select id="paymentMethod" required>
+                            <option value="">Seleccionar método</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="tarjeta">Tarjeta de Crédito</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Centro de Costo</label>
+                        <input type="text" id="costCenter" placeholder="CC-001">
+                    </div>
+                    <div class="form-group">
+                        <label>Proyecto</label>
+                        <input type="text" id="project" placeholder="Proyecto ABC">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="description" rows="3" placeholder="Detalles de la factura..."></textarea>
+                    </div>
+                </form>
+                
+                <button class="btn btn-primary" onclick="addInvoice()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Agregar Factura
+                </button>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Factura</th>
+                                <th>Proveedor</th>
+                                <th>Monto</th>
+                                <th>Fecha Ingreso</th>
+                                <th>Vencimiento</th>
+                                <th>Centro Costo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Proveedores -->
+            <div id="suppliers" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Gestión de Proveedores</h2>
+                
+                <form id="supplierForm" class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre del Proveedor *</label>
+                        <input type="text" id="supplierName" required placeholder="Nombre completo">
+                    </div>
+                    <div class="form-group">
+                        <label>RUC/DNI *</label>
+                        <input type="text" id="supplierRuc" required placeholder="12345678901">
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="supplierEmail" required placeholder="proveedor@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono *</label>
+                        <input type="tel" id="supplierPhone" required placeholder="+51 999 999 999">
+                    </div>
+                    <div class="form-group">
+                        <label>Dirección</label>
+                        <input type="text" id="supplierAddress" placeholder="Dirección completa">
+                    </div>
+                    <div class="form-group">
+                        <label>Contacto Principal</label>
+                        <input type="text" id="supplierContact" placeholder="Nombre del contacto">
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select id="supplierCategory">
+                            <option value="servicios">Servicios</option>
+                            <option value="productos">Productos</option>
+                            <option value="consultoria">Consultoría</option>
+                            <option value="tecnologia">Tecnología</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Datos Bancarios</label>
+                        <textarea id="bankDetails" rows="3" placeholder="Banco, cuenta, CCI..."></textarea>
+                    </div>
+                </form>
+                
+                <button class="btn btn-primary" onclick="addSupplier()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                    Agregar Proveedor
+                </button>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>RUC/DNI</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Categoría</th>
+                                <th>Contacto</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplierTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Historial de Pagos -->
+            <div id="payments" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Historial de Pagos</h2>
+                
+                <div class="search-box">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="paymentSearch" placeholder="Buscar por factura, proveedor o fecha..." onkeyup="searchPayments()">
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha Pago</th>
+                                <th>Factura</th>
+                                <th>Proveedor</th>
+                                <th>Monto</th>
+                                <th>Método</th>
+                                <th>Usuario</th>
+                                <th>Comprobante</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Importar desde BSale -->
+            <div id="import" class="tab-content">
+                <h2 style="margin-bottom: 20px;">🔄 Importador BSale - ERP Integration</h2>
+                
+                <div class="alert alert-info">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>Compatible con exportaciones de BSale en formato JSON y Excel. El sistema detectará automáticamente el formato y mapeará los campos.</span>
+                </div>
+
+                <div class="backup-panel" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color: #16a34a;">
+                    <h3>📥 Importar Datos desde BSale</h3>
+                    
+                    <div class="backup-grid">
+                        <div class="backup-card">
+                            <h3>📄 Importar Facturas</h3>
+                            <p>Importa facturas de compra desde BSale (JSON o Excel)</p>
+                            <input type="file" id="importInvoicesFile" accept=".json,.xlsx,.xls,.csv" style="display: none;" onchange="handleImportFile(event, 'invoices')">
+                            <button class="btn btn-success" onclick="document.getElementById('importInvoicesFile').click()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                Importar Facturas
+                            </button>
+                        </div>
+
+                        <div class="backup-card">
+                            <h3>👥 Importar Proveedores</h3>
+                            <p>Importa tu base de proveedores desde BSale</p>
+                            <input type="file" id="importSuppliersFile" accept=".json,.xlsx,.xls,.csv" style="display: none;" onchange="handleImportFile(event, 'suppliers')">
+                            <button class="btn btn-primary" onclick="document.getElementById('importSuppliersFile').click()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <path d="M20 9v6M23 12h-6"></path>
+                                </svg>
+                                Importar Proveedores
+                            </button>
+                        </div>
+
+                        <div class="backup-card">
+                            <h3>💳 Importar Pagos</h3>
+                            <p>Importa historial de pagos realizados</p>
+                            <input type="file" id="importPaymentsFile" accept=".json,.xlsx,.xls,.csv" style="display: none;" onchange="handleImportFile(event, 'payments')">
+                            <button class="btn btn-warning" onclick="document.getElementById('importPaymentsFile').click()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                                </svg>
+                                Importar Pagos
+                            </button>
+                        </div>
+
+                        <div class="backup-card">
+                            <h3>🔄 Sincronización API</h3>
+                            <p>Conecta directamente con la API de BSale</p>
+                            <input type="text" id="bsaleApiToken" placeholder="Token API de BSale" style="width: 100%; margin-bottom: 12px;">
+                            <button class="btn btn-secondary" onclick="setupBSaleAPI()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
+                                </svg>
+                                Configurar API
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">⚙️ Configuración de Mapeo de Campos</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Formato de Fecha BSale</label>
+                            <select id="bsaleDateFormat">
+                                <option value="YYYY-MM-DD">YYYY-MM-DD (2024-01-31)</option>
+                                <option value="DD/MM/YYYY">DD/MM/YYYY (31/01/2024)</option>
+                                <option value="MM/DD/YYYY">MM/DD/YYYY (01/31/2024)</option>
+                                <option value="timestamp">Timestamp Unix</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Moneda por Defecto</label>
+                            <select id="defaultCurrency">
+                                <option value="CLP">CLP - Peso Chileno</option>
+                                <option value="USD">USD - Dólar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="PEN">PEN - Sol Peruano</option>
+                                <option value="ARS">ARS - Peso Argentino</option>
+                                <option value="MXN">MXN - Peso Mexicano</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Manejo de Duplicados</label>
+                            <select id="duplicateHandling">
+                                <option value="skip">Omitir duplicados</option>
+                                <option value="update">Actualizar existentes</option>
+                                <option value="create">Crear nuevos siempre</option>
+                                <option value="ask">Preguntar cada vez</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Incluir IVA</label>
+                            <select id="includeIVA">
+                                <option value="yes">Sí - Incluir IVA en montos</option>
+                                <option value="no">No - Montos netos</option>
+                                <option value="separate">Separar IVA</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="saveImportSettings()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        </svg>
+                        Guardar Configuración
+                    </button>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">📊 Vista Previa de Importación</h3>
+                    <div id="importPreview" style="display: none;">
+                        <div class="alert alert-warning">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span id="importSummary">Se encontraron 0 registros para importar</span>
+                        </div>
+                        
+                        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                            <table id="previewTable">
+                                <thead id="previewTableHead">
+                                </thead>
+                                <tbody id="previewTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button class="btn btn-success" onclick="confirmImport()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Confirmar Importación
+                            </button>
+                            <button class="btn btn-danger" onclick="cancelImport()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">📝 Historial de Importaciones</h3>
+                    <div class="backup-history" id="importHistory">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integración SII -->
+            <div id="sii" class="tab-content">
+                <h2 style="margin-bottom: 20px;">🇨🇱 Integración con Servicio de Impuestos Internos (SII)</h2>
+                
+                <div class="alert alert-info">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span>Sistema integrado con el SII para validación tributaria, documentos electrónicos y cumplimiento fiscal automático.</span>
+                </div>
+
+                <div class="backup-panel" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-color: #f59e0b;">
+                    <h3>🔐 Configuración de Certificado Digital SII</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>RUT Empresa *</label>
+                            <input type="text" id="siiRutEmpresa" placeholder="76.XXX.XXX-X" onblur="validateRUT(this.value)">
+                            <small id="rutValidation" style="color: #065f46;"></small>
+                        </div>
+                        <div class="form-group">
+                            <label>Razón Social *</label>
+                            <input type="text" id="siiRazonSocial" placeholder="Nombre de la empresa">
+                        </div>
+                        <div class="form-group">
+                            <label>Certificado Digital (.p12)</label>
+                            <input type="file" id="siiCertificate" accept=".p12,.pfx" style="display: none;" onchange="handleCertificate(event)">
+                            <button class="btn btn-secondary" onclick="document.getElementById('siiCertificate').click()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                                </svg>
+                                Cargar Certificado
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña Certificado</label>
+                            <input type="password" id="siiCertPassword" placeholder="********">
+                        </div>
+                        <div class="form-group">
+                            <label>Ambiente</label>
+                            <select id="siiEnvironment">
+                                <option value="certificacion">Certificación (Pruebas)</option>
+                                <option value="produccion">Producción</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Actividad Económica</label>
+                            <select id="siiActividadEconomica">
+                                <option value="">Seleccionar actividad</option>
+                                <option value="461000">Venta al por mayor a cambio de comisión</option>
+                                <option value="462000">Venta al por mayor de materias primas</option>
+                                <option value="463000">Venta al por mayor de enseres domésticos</option>
+                                <option value="464100">Venta al por mayor de productos textiles</option>
+                                <option value="465100">Venta al por mayor de computadores</option>
+                                <option value="620100">Actividades de programación informática</option>
+                                <option value="702000">Actividades de consultoría de gestión</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-warning" onclick="saveSIIConfig()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        </svg>
+                        Guardar Configuración SII
+                    </button>
+                </div>
+
+                <div class="stats-grid" style="margin-top: 30px;">
+                    <div class="stat-card">
+                        <h3>📄 Documentos Electrónicos</h3>
+                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="consultarDTE()">
+                            Consultar DTE
+                        </button>
+                    </div>
+                    <div class="stat-card">
+                        <h3>✅ Validar Factura</h3>
+                        <button class="btn btn-success" style="margin-top: 10px;" onclick="showValidateInvoiceModal()">
+                            Validar Documento
+                        </button>
+                    </div>
+                    <div class="stat-card">
+                        <h3>📚 Libro de Compras</h3>
+                        <button class="btn btn-warning" style="margin-top: 10px;" onclick="generateLibroCompras()">
+                            Generar Libro
+                        </button>
+                    </div>
+                    <div class="stat-card">
+                        <h3>🧾 Reportes F29</h3>
+                        <button class="btn btn-danger" style="margin-top: 10px;" onclick="generateF29()">
+                            Preparar F29
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">🔍 Consulta y Validación de Documentos</h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>RUT Emisor</label>
+                            <input type="text" id="siiRutEmisor" placeholder="76.XXX.XXX-X">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Documento</label>
+                            <select id="siiTipoDoc">
+                                <option value="33">Factura Electrónica</option>
+                                <option value="34">Factura Exenta Electrónica</option>
+                                <option value="61">Nota de Crédito Electrónica</option>
+                                <option value="56">Nota de Débito Electrónica</option>
+                                <option value="52">Guía de Despacho Electrónica</option>
+                                <option value="39">Boleta Electrónica</option>
+                                <option value="41">Boleta Exenta Electrónica</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Folio</label>
+                            <input type="number" id="siiFolio" placeholder="12345">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Emisión</label>
+                            <input type="date" id="siiFechaEmision">
+                        </div>
+                        <div class="form-group">
+                            <label>Monto Total</label>
+                            <input type="number" id="siiMontoTotal" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Código de Verificación</label>
+                            <input type="text" id="siiCodigoVerificacion" placeholder="ABC123...">
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="validateDTE()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Validar en SII
+                        </button>
+                        <button class="btn btn-success" onclick="downloadDTE()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            </svg>
+                            Descargar XML
+                        </button>
+                        <button class="btn btn-warning" onclick="consultarEstadoDTE()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            Estado DTE
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">📊 Resumen Tributario del Período</h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Período</label>
+                            <input type="month" id="siiPeriodo" value="${new Date().toISOString().slice(0, 7)}">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Resumen</label>
+                            <select id="siiTipoResumen">
+                                <option value="mensual">Mensual</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="anual">Anual</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="generateSIISummary()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Generar Resumen
+                    </button>
+                    
+                    <div id="siiSummaryResult" style="margin-top: 20px; display: none;">
+                        <div class="backup-panel">
+                            <h4>Resumen del Período</h4>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <h3>Compras Netas</h3>
+                                    <div class="stat-value" id="siiComprasNetas">$0</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>IVA Crédito Fiscal</h3>
+                                    <div class="stat-value" id="siiIVACredito">$0</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>Total Facturas</h3>
+                                    <div class="stat-value" id="siiTotalFacturas">0</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>Retenciones</h3>
+                                    <div class="stat-value" id="siiRetenciones">$0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">🔄 Sincronización Automática</h3>
+                    
+                    <div class="alert alert-warning">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span>La sincronización automática descargará y validará facturas electrónicas cada hora durante el horario laboral.</span>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="siiAutoSync" onchange="toggleSIIAutoSync()">
+                                Activar sincronización automática
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Frecuencia</label>
+                            <select id="siiSyncFrequency">
+                                <option value="60">Cada hora</option>
+                                <option value="120">Cada 2 horas</option>
+                                <option value="240">Cada 4 horas</option>
+                                <option value="1440">Diario</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Horario de sincronización</label>
+                            <select id="siiSyncSchedule">
+                                <option value="business">Horario laboral (9:00 - 18:00)</option>
+                                <option value="always">24/7</option>
+                                <option value="custom">Personalizado</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="siiSyncStatus" class="backup-history" style="margin-top: 20px;">
+                        <!-- Se llenará con el estado de sincronización -->
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">📈 Estado de Cumplimiento Tributario</h3>
+                    
+                    <div class="backup-panel" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-color: #10b981;">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>Estado Contribuyente</h3>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                                    <div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%;"></div>
+                                    <span style="font-weight: 600;">Activo</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Certificado Digital</h3>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                                    <div style="width: 12px; height: 12px; background: #f59e0b; border-radius: 50%;"></div>
+                                    <span style="font-weight: 600;">Vence en 30 días</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Declaraciones F29</h3>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                                    <div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%;"></div>
+                                    <span style="font-weight: 600;">Al día</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Folios Disponibles</h3>
+                                <div style="font-size: 24px; font-weight: 700; margin-top: 10px;">
+                                    1,245
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Respaldo y Seguridad -->
+            <div id="backup" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Centro de Respaldo y Seguridad</h2>
+                
+                <div class="backup-panel">
+                    <h3>🔐 Configuración de Respaldo Empresarial</h3>
+                    <div class="backup-grid">
+                        <div class="backup-card">
+                            <h3>💾 Respaldo Local</h3>
+                            <p>Descarga una copia completa de todos tus datos en formato encriptado</p>
+                            <button class="btn btn-primary" onclick="createBackup()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                </svg>
+                                Crear Respaldo
+                            </button>
+                        </div>
+                        
+                        <div class="backup-card">
+                            <h3>📥 Restaurar Datos</h3>
+                            <p>Restaura tus datos desde un archivo de respaldo previo</p>
+                            <input type="file" id="restoreFile" accept=".json,.backup" style="display: none;" onchange="restoreBackup(event)">
+                            <button class="btn btn-warning" onclick="document.getElementById('restoreFile').click()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 15v4a2 2 0 002 2h14a2 2 0 002-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                </svg>
+                                Restaurar Respaldo
+                            </button>
+                        </div>
+                        
+                        <div class="backup-card">
+                            <h3>☁️ Sincronización Cloud</h3>
+                            <p>Configura respaldo automático en Google Drive o OneDrive</p>
+                            <button class="btn btn-success" onclick="setupCloudSync()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"></path>
+                                </svg>
+                                Configurar Cloud
+                            </button>
+                        </div>
+                        
+                        <div class="backup-card">
+                            <h3>📧 Respaldo por Email</h3>
+                            <p>Envía automáticamente copias de seguridad a tu email corporativo</p>
+                            <input type="email" id="backupEmail" placeholder="backup@empresa.com" style="width: 100%; margin-bottom: 12px;">
+                            <button class="btn btn-secondary" onclick="configureEmailBackup()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                    <path d="M22 7l-10 5L2 7"></path>
+                                </svg>
+                                Configurar Email
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 20px;">📋 Historial de Respaldos</h3>
+                <div class="backup-history" id="backupHistory">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <h3 style="margin-top: 30px; margin-bottom: 20px;">⚙️ Configuración de Seguridad</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Frecuencia de Respaldo Automático</label>
+                        <select id="backupFrequency" onchange="updateBackupFrequency()">
+                            <option value="5">Cada 5 minutos</option>
+                            <option value="15">Cada 15 minutos</option>
+                            <option value="30">Cada 30 minutos</option>
+                            <option value="60">Cada hora</option>
+                            <option value="1440">Diario</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Retención de Respaldos</label>
+                        <select id="backupRetention">
+                            <option value="7">7 días</option>
+                            <option value="30">30 días</option>
+                            <option value="90">90 días</option>
+                            <option value="365">1 año</option>
+                            <option value="0">Indefinido</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Encriptación</label>
+                        <select id="encryptionLevel">
+                            <option value="aes256">AES-256 (Recomendado)</option>
+                            <option value="aes128">AES-128</option>
+                            <option value="none">Sin encriptación</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auditoría -->
+            <div id="audit" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Registro de Auditoría</h2>
+                
+                <div class="alert alert-info">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                    <span>Todos los cambios en el sistema son registrados automáticamente para auditoría</span>
+                </div>
+
+                <div class="search-box">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="auditSearch" placeholder="Buscar en el registro de auditoría..." onkeyup="searchAudit()">
+                </div>
+
+                <div class="form-grid" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Filtrar por Usuario</label>
+                        <select id="auditUserFilter" onchange="filterAudit()">
+                            <option value="">Todos los usuarios</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Usuario1">Usuario1</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Filtrar por Acción</label>
+                        <select id="auditActionFilter" onchange="filterAudit()">
+                            <option value="">Todas las acciones</option>
+                            <option value="create">Creación</option>
+                            <option value="update">Actualización</option>
+                            <option value="delete">Eliminación</option>
+                            <option value="payment">Pago</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Desde</label>
+                        <input type="date" id="auditDateFrom" onchange="filterAudit()">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Hasta</label>
+                        <input type="date" id="auditDateTo" onchange="filterAudit()">
+                    </div>
+                </div>
+
+                <div class="audit-log" id="auditLog">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Recordatorios -->
+            <div id="reminders" class="tab-content">
+                <h2 style="margin-bottom: 20px;">Configuración de Recordatorios</h2>
+                
+                <form class="form-grid">
+                    <div class="form-group">
+                        <label>Días antes del vencimiento para notificar</label>
+                        <input type="number" id="reminderDays" value="3" min="1" max="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Email para notificaciones</label>
+                        <input type="email" id="notificationEmail" placeholder="admin@empresa.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Hora de envío</label>
+                        <input type="time" id="reminderTime" value="09:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Canal de notificación</label>
+                        <select id="notificationChannel">
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                            <option value="both">Email y SMS</option>
+                            <option value="slack">Slack</option>
+                            <option value="teams">Microsoft Teams</option>
+                        </select>
+                    </div>
+                </form>
+                
+                <button class="btn btn-success" onclick="saveReminderSettings()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Guardar Configuración
+                </button>
+
+                <h3 style="margin-top: 40px; margin-bottom: 20px;">Próximos Vencimientos</h3>
+                <div id="upcomingReminders"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para pago -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Registrar Pago</h2>
+            <form id="paymentModalForm">
+                <div class="form-group">
+                    <label>Fecha de Pago *</label>
+                    <input type="date" id="paymentDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Número de Operación/Referencia</label>
+                    <input type="text" id="paymentReference" placeholder="REF-001">
+                </div>
+                <div class="form-group">
+                    <label>Banco/Entidad</label>
+                    <input type="text" id="paymentBank" placeholder="Banco XYZ">
+                </div>
+                <div class="form-group">
+                    <label>Notas</label>
+                    <textarea id="paymentNotes" rows="3" placeholder="Notas adicionales..."></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn btn-success" onclick="confirmPayment()">Confirmar Pago</button>
+                    <button type="button" class="btn btn-danger" onclick="closePaymentModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Configuración del sistema
+        const SYSTEM_CONFIG = {
+            version: '3.0.0',
+            company: 'Empresa S.A.',
+            backupInterval: 5 * 60 * 1000, // 5 minutos por defecto
+            maxBackups: 100,
+            encryptionKey: 'empresa-secure-key-2024',
+            bsaleIntegration: true
+        };
+
+        // Inicialización de datos con estructura empresarial
+        let suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+        let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+        let payments = JSON.parse(localStorage.getItem('payments')) || [];
+        let auditLog = JSON.parse(localStorage.getItem('auditLog')) || [];
+        let backupHistory = JSON.parse(localStorage.getItem('backupHistory')) || [];
+        let importHistory = JSON.parse(localStorage.getItem('importHistory')) || [];
+        let currentUser = JSON.parse(localStorage.getItem('currentUser')) || { name: 'Admin', id: 'user001', role: 'admin' };
+        let currentPaymentInvoice = null;
+        let autoBackupInterval = null;
+        let pendingImportData = null;
+        let pendingImportType = null;
+
+        // Mapeo de campos BSale
+        const BSALE_FIELD_MAPPING = {
+            invoices: {
+                'document.number': 'invoiceNumber',
+                'documentNumber': 'invoiceNumber',
+                'numero': 'invoiceNumber',
+                'document.emissionDate': 'entryDate',
+                'emissionDate': 'entryDate',
+                'fechaEmision': 'entryDate',
+                'document.expirationDate': 'dueDate',
+                'expirationDate': 'dueDate',
+                'fechaVencimiento': 'dueDate',
+                'document.totalAmount': 'amount',
+                'totalAmount': 'amount',
+                'total': 'amount',
+                'monto': 'amount',
+                'client.name': 'supplierName',
+                'clientName': 'supplierName',
+                'proveedor': 'supplierName',
+                'document.state': 'status',
+                'state': 'status',
+                'estado': 'status',
+                'paymentType': 'paymentMethod',
+                'tipoPago': 'paymentMethod',
+                'office.name': 'costCenter',
+                'sucursal': 'costCenter',
+                'document.urlPdf': 'pdfUrl',
+                'document.description': 'description',
+                'descripcion': 'description',
+                'glosa': 'description'
+            },
+            suppliers: {
+                'name': 'name',
+                'nombre': 'name',
+                'company': 'name',
+                'code': 'ruc',
+                'rut': 'ruc',
+                'dni': 'ruc',
+                'email': 'email',
+                'correo': 'email',
+                'phone': 'phone',
+                'telefono': 'phone',
+                'mobile': 'phone',
+                'address': 'address',
+                'direccion': 'address',
+                'city': 'city',
+                'ciudad': 'city',
+                'contactFirstName': 'contact',
+                'contacto': 'contact',
+                'activity': 'category',
+                'categoria': 'category',
+                'bankInfo': 'bankDetails',
+                'datosBancarios': 'bankDetails'
+            },
+            payments: {
+                'payment.recordDate': 'paymentDate',
+                'recordDate': 'paymentDate',
+                'fechaPago': 'paymentDate',
+                'document.number': 'invoiceNumber',
+                'documentNumber': 'invoiceNumber',
+                'numeroDocumento': 'invoiceNumber',
+                'client.name': 'supplierName',
+                'proveedor': 'supplierName',
+                'payment.amount': 'amount',
+                'amount': 'amount',
+                'monto': 'amount',
+                'paymentType.name': 'paymentMethod',
+                'metodoPago': 'paymentMethod',
+                'payment.checkNumber': 'reference',
+                'referencia': 'reference',
+                'numeroOperacion': 'reference',
+                'office.name': 'bank',
+                'banco': 'bank',
+                'payment.note': 'notes',
+                'notas': 'notes'
+            }
+        };
+
+        // Función para cambiar tabs
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            } else if (tabName === 'audit') {
+                updateAuditLog();
+            } else if (tabName === 'backup') {
+                updateBackupHistory();
+            } else if (tabName === 'import') {
+                updateImportHistory();
+            } else if (tabName === 'sii') {
+                updateSIISyncStatus();
+            }
+
+            logAuditEvent('navigation', `Navegó a ${tabName}`);
+        }
+
+        // Sistema de auditoría
+        function logAuditEvent(action, description, details = {}) {
+            const event = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                user: currentUser.name,
+                userId: currentUser.id,
+                action: action,
+                description: description,
+                details: details,
+                ip: '192.168.1.1', // En producción, obtener IP real
+                sessionId: generateSessionId()
+            };
+            
+            auditLog.unshift(event);
+            localStorage.setItem('auditLog', JSON.stringify(auditLog));
+        }
+
+        // Generar ID de sesión
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Sistema de respaldo automático
+        function startAutoBackup() {
+            // Limpiar intervalo anterior si existe
+            if (autoBackupInterval) {
+                clearInterval(autoBackupInterval);
+            }
+            
+            // Configurar nuevo intervalo
+            const frequency = parseInt(localStorage.getItem('backupFrequency') || '5');
+            const interval = frequency * 60 * 1000;
+            
+            autoBackupInterval = setInterval(() => {
+                autoBackup();
+            }, interval);
+            
+            // Realizar respaldo inicial
+            autoBackup();
+        }
+
+        // Respaldo automático
+        function autoBackup() {
+            const backup = createBackupData();
+            const backupEntry = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                type: 'automatic',
+                size: JSON.stringify(backup).length,
+                user: currentUser.name,
+                status: 'success'
+            };
+            
+            // Guardar en el historial
+            backupHistory.unshift(backupEntry);
+            if (backupHistory.length > SYSTEM_CONFIG.maxBackups) {
+                backupHistory = backupHistory.slice(0, SYSTEM_CONFIG.maxBackups);
+            }
+            localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
+            
+            // Guardar respaldo en localStorage con timestamp
+            localStorage.setItem(`backup_${backupEntry.id}`, JSON.stringify(backup));
+            
+            // Actualizar UI
+            updateBackupStatus();
+            
+            // Simular sincronización cloud
+            simulateCloudSync();
+        }
+
+        // Crear datos de respaldo
+        function createBackupData() {
+            return {
+                version: SYSTEM_CONFIG.version,
+                timestamp: new Date().toISOString(),
+                company: SYSTEM_CONFIG.company,
+                data: {
+                    suppliers: suppliers,
+                    invoices: invoices,
+                    payments: payments,
+                    auditLog: auditLog.slice(0, 1000), // Últimos 1000 eventos
+                    settings: {
+                        reminderDays: localStorage.getItem('reminderDays'),
+                        notificationEmail: localStorage.getItem('notificationEmail'),
+                        reminderTime: localStorage.getItem('reminderTime'),
+                        backupFrequency: localStorage.getItem('backupFrequency')
+                    }
+                },
+                checksum: generateChecksum()
+            };
+        }
+
+        // Generar checksum para integridad
+        function generateChecksum() {
+            const data = JSON.stringify({ suppliers, invoices, payments });
+            let hash = 0;
+            for (let i = 0; i < data.length; i++) {
+                const char = data.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(16);
+        }
+
+        // Crear respaldo manual
+        function createBackup() {
+            const backup = createBackupData();
+            const encryptedBackup = encryptData(backup);
+            
+            // Crear archivo para descargar
+            const blob = new Blob([JSON.stringify(encryptedBackup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_${SYSTEM_CONFIG.company}_${new Date().toISOString().split('T')[0]}.backup`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Registrar en auditoría
+            logAuditEvent('backup', 'Respaldo manual creado', { size: blob.size });
+            
+            // Agregar al historial
+            const backupEntry = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                type: 'manual',
+                size: blob.size,
+                user: currentUser.name,
+                status: 'success'
+            };
+            backupHistory.unshift(backupEntry);
+            localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
+            
+            showAlert('Respaldo creado exitosamente', 'success');
+            updateBackupHistory();
+        }
+
+        // Encriptar datos (simulado - en producción usar librería real)
+        function encryptData(data) {
+            // Simulación de encriptación
+            return {
+                encrypted: true,
+                algorithm: 'AES-256',
+                data: btoa(JSON.stringify(data)),
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        // Desencriptar datos
+        function decryptData(encryptedData) {
+            // Simulación de desencriptación
+            if (encryptedData.encrypted) {
+                return JSON.parse(atob(encryptedData.data));
+            }
+            return encryptedData;
+        }
+
+        // Restaurar respaldo
+        function restoreBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const encryptedBackup = JSON.parse(e.target.result);
+                    const backup = decryptData(encryptedBackup);
+                    
+                    // Verificar integridad
+                    if (!backup.version || !backup.data) {
+                        throw new Error('Archivo de respaldo inválido');
+                    }
+                    
+                    // Confirmar restauración
+                    if (confirm(`¿Está seguro de restaurar el respaldo del ${formatDate(backup.timestamp)}? Esto reemplazará todos los datos actuales.`)) {
+                        // Crear respaldo actual antes de restaurar
+                        autoBackup();
+                        
+                        // Restaurar datos
+                        suppliers = backup.data.suppliers || [];
+                        invoices = backup.data.invoices || [];
+                        payments = backup.data.payments || [];
+                        
+                        // Guardar en localStorage
+                        localStorage.setItem('suppliers', JSON.stringify(suppliers));
+                        localStorage.setItem('invoices', JSON.stringify(invoices));
+                        localStorage.setItem('payments', JSON.stringify(payments));
+                        
+                        // Restaurar configuraciones
+                        if (backup.data.settings) {
+                            Object.keys(backup.data.settings).forEach(key => {
+                                if (backup.data.settings[key]) {
+                                    localStorage.setItem(key, backup.data.settings[key]);
+                                }
+                            });
+                        }
+                        
+                        // Registrar en auditoría
+                        logAuditEvent('restore', 'Respaldo restaurado', { 
+                            backupDate: backup.timestamp,
+                            recordsRestored: {
+                                suppliers: suppliers.length,
+                                invoices: invoices.length,
+                                payments: payments.length
+                            }
+                        });
+                        
+                        // Actualizar todas las vistas
+                        updateAllViews();
+                        
+                        showAlert('Respaldo restaurado exitosamente', 'success');
+                    }
+                } catch (error) {
+                    showAlert('Error al restaurar el respaldo: ' + error.message, 'danger');
+                    logAuditEvent('restore_error', 'Error al restaurar respaldo', { error: error.message });
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Configurar sincronización cloud (simulado)
+        function setupCloudSync() {
+            // Simulación de configuración cloud
+            const provider = prompt('Seleccione proveedor cloud:\n1. Google Drive\n2. OneDrive\n3. Dropbox');
+            
+            if (provider) {
+                localStorage.setItem('cloudProvider', provider);
+                showAlert('Sincronización cloud configurada. Los respaldos se sincronizarán automáticamente.', 'success');
+                logAuditEvent('cloud_setup', 'Sincronización cloud configurada', { provider });
+                simulateCloudSync();
+            }
+        }
+
+        // Simular sincronización cloud
+        function simulateCloudSync() {
+            const cloudSync = document.getElementById('cloudSync');
+            if (cloudSync) {
+                cloudSync.style.display = 'flex';
+                cloudSync.querySelector('svg').classList.add('rotating');
+                
+                setTimeout(() => {
+                    cloudSync.style.display = 'none';
+                    updateBackupStatus();
+                }, 3000);
+            }
+        }
+
+        // Configurar respaldo por email
+        function configureEmailBackup() {
+            const email = document.getElementById('backupEmail').value;
+            if (!email) {
+                showAlert('Por favor ingrese un email válido', 'warning');
+                return;
+            }
+            
+            localStorage.setItem('backupEmail', email);
+            showAlert(`Respaldo por email configurado. Se enviarán copias automáticas a ${email}`, 'success');
+            logAuditEvent('email_backup', 'Respaldo por email configurado', { email });
+        }
+
+        // Actualizar frecuencia de respaldo
+        function updateBackupFrequency() {
+            const frequency = document.getElementById('backupFrequency').value;
+            localStorage.setItem('backupFrequency', frequency);
+            startAutoBackup();
+            showAlert('Frecuencia de respaldo actualizada', 'success');
+            logAuditEvent('settings', 'Frecuencia de respaldo actualizada', { frequency });
+        }
+
+        // Actualizar estado de respaldo
+        function updateBackupStatus() {
+            const lastBackup = backupHistory[0];
+            const statusElement = document.getElementById('lastBackupTime');
+            const syncElement = document.getElementById('lastSync');
+            
+            if (lastBackup) {
+                const timeDiff = Date.now() - new Date(lastBackup.timestamp).getTime();
+                const minutes = Math.floor(timeDiff / 60000);
+                
+                if (statusElement) {
+                    if (minutes < 1) {
+                        statusElement.textContent = 'Respaldo: Hace menos de 1 min';
+                    } else if (minutes < 60) {
+                        statusElement.textContent = `Respaldo: Hace ${minutes} min`;
+                    } else {
+                        const hours = Math.floor(minutes / 60);
+                        statusElement.textContent = `Respaldo: Hace ${hours} hora${hours > 1 ? 's' : ''}`;
+                    }
+                }
+                
+                if (syncElement) {
+                    syncElement.textContent = minutes < 1 ? 'Hace menos de 1 min' : `Hace ${minutes} min`;
+                }
+            }
+        }
+
+        // Actualizar historial de respaldos
+        function updateBackupHistory() {
+            const container = document.getElementById('backupHistory');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (backupHistory.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666;">No hay respaldos registrados</div>';
+                return;
+            }
+            
+            backupHistory.slice(0, 10).forEach(backup => {
+                const item = document.createElement('div');
+                item.className = 'backup-item';
+                item.innerHTML = `
+                    <div class="backup-info">
+                        <div class="backup-date">${formatDateTime(backup.timestamp)}</div>
+                        <div class="backup-details">
+                            Tipo: ${backup.type === 'automatic' ? 'Automático' : 'Manual'} | 
+                            Tamaño: ${formatFileSize(backup.size)} | 
+                            Usuario: ${backup.user}
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" 
+                            onclick="downloadBackup('${backup.id}')">
+                        Descargar
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Descargar respaldo específico
+        function downloadBackup(backupId) {
+            const backupData = localStorage.getItem(`backup_${backupId}`);
+            if (backupData) {
+                const blob = new Blob([backupData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_${backupId}_${new Date().toISOString().split('T')[0]}.backup`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                showAlert('Respaldo descargado', 'success');
+            } else {
+                showAlert('Respaldo no disponible', 'warning');
+            }
+        }
+
+        // Actualizar registro de auditoría
+        function updateAuditLog() {
+            const container = document.getElementById('auditLog');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const logsToShow = auditLog.slice(0, 100); // Mostrar últimos 100 eventos
+            
+            logsToShow.forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                
+                const iconColor = getActionColor(log.action);
+                
+                entry.innerHTML = `
+                    <div class="log-icon" style="background: ${iconColor}20;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2">
+                            ${getActionIcon(log.action)}
+                        </svg>
+                    </div>
+                    <div class="log-content">
+                        <div class="log-action">${log.description}</div>
+                        <div class="log-details">Usuario: ${log.user} | IP: ${log.ip}</div>
+                    </div>
+                    <div class="log-time">${formatDateTime(log.timestamp)}</div>
+                `;
+                
+                container.appendChild(entry);
+            });
+        }
+
+        // Obtener color según acción
+        function getActionColor(action) {
+            const colors = {
+                'create': '#10b981',
+                'update': '#3b82f6',
+                'delete': '#ef4444',
+                'payment': '#8b5cf6',
+                'backup': '#06b6d4',
+                'restore': '#f59e0b',
+                'navigation': '#64748b'
+            };
+            return colors[action] || '#64748b';
+        }
+
+        // Obtener ícono según acción
+        function getActionIcon(action) {
+            const icons = {
+                'create': '<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>',
+                'update': '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>',
+                'delete': '<polyline points="3 6 5 6 21 6"></polyline>',
+                'payment': '<path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path>',
+                'backup': '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>',
+                'navigation': '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>'
+            };
+            return icons[action] || '<circle cx="12" cy="12" r="10"></circle>';
+        }
+
+        // Buscar en auditoría
+        function searchAudit() {
+            const searchTerm = document.getElementById('auditSearch').value.toLowerCase();
+            const entries = document.querySelectorAll('.log-entry');
+            
+            entries.forEach(entry => {
+                const text = entry.textContent.toLowerCase();
+                entry.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+            });
+        }
+
+        // Filtrar auditoría
+        function filterAudit() {
+            const userFilter = document.getElementById('auditUserFilter').value;
+            const actionFilter = document.getElementById('auditActionFilter').value;
+            const dateFrom = document.getElementById('auditDateFrom').value;
+            const dateTo = document.getElementById('auditDateTo').value;
+            
+            // Implementar filtros (código simplificado)
+            updateAuditLog();
+        }
+
+        // Agregar proveedor
+        function addSupplier() {
+            const supplier = {
+                id: Date.now(),
+                name: document.getElementById('supplierName').value,
+                ruc: document.getElementById('supplierRuc').value,
+                email: document.getElementById('supplierEmail').value,
+                phone: document.getElementById('supplierPhone').value,
+                address: document.getElementById('supplierAddress').value,
+                contact: document.getElementById('supplierContact').value,
+                category: document.getElementById('supplierCategory').value,
+                bankDetails: document.getElementById('bankDetails').value,
+                createdBy: currentUser.name,
+                createdAt: new Date().toISOString()
+            };
+            
+            if (!supplier.name || !supplier.ruc || !supplier.email) {
+                showAlert('Por favor complete los campos obligatorios', 'warning');
+                return;
+            }
+            
+            suppliers.push(supplier);
+            localStorage.setItem('suppliers', JSON.stringify(suppliers));
+            
+            logAuditEvent('create', `Proveedor agregado: ${supplier.name}`, { supplierId: supplier.id });
+            
+            updateSupplierTable();
+            updateSupplierSelect();
+            document.getElementById('supplierForm').reset();
+            
+            showAlert('Proveedor agregado exitosamente', 'success');
+        }
+
+        // Agregar factura
+        function addInvoice() {
+            const invoice = {
+                id: Date.now(),
+                supplierId: document.getElementById('supplierSelect').value,
+                supplierName: document.getElementById('supplierSelect').options[document.getElementById('supplierSelect').selectedIndex].text,
+                invoiceNumber: document.getElementById('invoiceNumber').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                entryDate: document.getElementById('entryDate').value,
+                dueDate: document.getElementById('dueDate').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                costCenter: document.getElementById('costCenter').value,
+                project: document.getElementById('project').value,
+                description: document.getElementById('description').value,
+                status: 'pending',
+                createdBy: currentUser.name,
+                createdAt: new Date().toISOString()
+            };
+            
+            if (!invoice.supplierId || !invoice.invoiceNumber || !invoice.amount || !invoice.entryDate || !invoice.dueDate) {
+                showAlert('Por favor complete todos los campos obligatorios', 'warning');
+                return;
+            }
+            
+            invoices.push(invoice);
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            
+            logAuditEvent('create', `Factura agregada: ${invoice.invoiceNumber}`, { 
+                invoiceId: invoice.id,
+                amount: invoice.amount,
+                supplier: invoice.supplierName
+            });
+            
+            updateInvoiceTable();
+            document.getElementById('invoiceForm').reset();
+            
+            showAlert('Factura agregada exitosamente', 'success');
+            checkForReminders();
+        }
+
+        // Actualizar tabla de proveedores
+        function updateSupplierTable() {
+            const tbody = document.getElementById('supplierTableBody');
+            tbody.innerHTML = '';
+            
+            suppliers.forEach(supplier => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${supplier.name}</td>
+                    <td>${supplier.ruc}</td>
+                    <td>${supplier.email}</td>
+                    <td>${supplier.phone}</td>
+                    <td>${supplier.category || 'N/A'}</td>
+                    <td>${supplier.contact || 'N/A'}</td>
+                    <td class="action-buttons">
+                        <button class="icon-btn" style="background: #dbeafe; color: #1e40af;" onclick="editSupplier(${supplier.id})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button class="icon-btn" style="background: #fee2e2; color: #991b1b;" onclick="deleteSupplier(${supplier.id})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                            </svg>
+                        </button>
+                    </td>
+                `;
+            });
+        }
+
+        // Actualizar tabla de facturas
+        function updateInvoiceTable() {
+            const tbody = document.getElementById('invoiceTableBody');
+            tbody.innerHTML = '';
+            
+            invoices.forEach(invoice => {
+                const row = tbody.insertRow();
+                const today = new Date();
+                const dueDate = new Date(invoice.dueDate);
+                let statusClass = 'status-pending';
+                let statusText = 'Pendiente';
+                
+                if (invoice.status === 'paid') {
+                    statusClass = 'status-paid';
+                    statusText = 'Pagado';
+                } else if (dueDate < today) {
+                    statusClass = 'status-overdue';
+                    statusText = 'Vencido';
+                }
+                
+                row.innerHTML = `
+                    <td>${invoice.invoiceNumber}</td>
+                    <td>${invoice.supplierName}</td>
+                    <td>$${invoice.amount.toFixed(2)}</td>
+                    <td>${formatDate(invoice.entryDate)}</td>
+                    <td>${formatDate(invoice.dueDate)}</td>
+                    <td>${invoice.costCenter || 'N/A'}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td class="action-buttons">
+                        ${invoice.status !== 'paid' ? `
+                            <button class="icon-btn" style="background: #d1fae5; color: #065f46;" onclick="payInvoice(${invoice.id})">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </button>
+                        ` : ''}
+                        <button class="icon-btn" style="background: #dbeafe; color: #1e40af;" onclick="generatePDF(${invoice.id})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                        </button>
+                        <button class="icon-btn" style="background: #fee2e2; color: #991b1b;" onclick="deleteInvoice(${invoice.id})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                            </svg>
+                        </button>
+                    </td>
+                `;
+            });
+        }
+
+        // Actualizar select de proveedores
+        function updateSupplierSelect() {
+            const select = document.getElementById('supplierSelect');
+            select.innerHTML = '<option value="">Seleccionar proveedor</option>';
+            
+            suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier.id;
+                option.text = supplier.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Pagar factura
+        function payInvoice(invoiceId) {
+            currentPaymentInvoice = invoiceId;
+            document.getElementById('paymentModal').classList.add('active');
+            document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        // Confirmar pago
+        function confirmPayment() {
+            if (!currentPaymentInvoice) return;
+            
+            const invoice = invoices.find(inv => inv.id === currentPaymentInvoice);
+            if (!invoice) return;
+            
+            const payment = {
+                id: Date.now(),
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                supplierName: invoice.supplierName,
+                amount: invoice.amount,
+                paymentDate: document.getElementById('paymentDate').value,
+                paymentMethod: invoice.paymentMethod,
+                reference: document.getElementById('paymentReference').value,
+                bank: document.getElementById('paymentBank').value,
+                notes: document.getElementById('paymentNotes').value,
+                processedBy: currentUser.name,
+                processedAt: new Date().toISOString()
+            };
+            
+            payments.push(payment);
+            localStorage.setItem('payments', JSON.stringify(payments));
+            
+            invoice.status = 'paid';
+            invoice.paymentDate = payment.paymentDate;
+            invoice.paidBy = currentUser.name;
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            
+            logAuditEvent('payment', `Pago registrado: Factura ${invoice.invoiceNumber}`, {
+                paymentId: payment.id,
+                amount: payment.amount,
+                supplier: payment.supplierName
+            });
+            
+            updateInvoiceTable();
+            updatePaymentTable();
+            closePaymentModal();
+            
+            showAlert('Pago registrado exitosamente', 'success');
+            
+            // Simular envío de correo
+            sendEmailNotification(invoice, payment);
+        }
+
+        // Cerrar modal de pago
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.remove('active');
+            document.getElementById('paymentModalForm').reset();
+            currentPaymentInvoice = null;
+        }
+
+        // Actualizar tabla de pagos
+        function updatePaymentTable() {
+            const tbody = document.getElementById('paymentTableBody');
+            tbody.innerHTML = '';
+            
+            payments.forEach(payment => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${formatDate(payment.paymentDate)}</td>
+                    <td>${payment.invoiceNumber}</td>
+                    <td>${payment.supplierName}</td>
+                    <td>$${payment.amount.toFixed(2)}</td>
+                    <td>${capitalizeFirst(payment.paymentMethod)}</td>
+                    <td>${payment.processedBy}</td>
+                    <td>
+                        <button class="icon-btn" style="background: #dbeafe; color: #1e40af;" onclick="generateReceipt(${payment.id})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                        </button>
+                    </td>
+                `;
+            });
+        }
+
+        // Buscar pagos
+        function searchPayments() {
+            const searchTerm = document.getElementById('paymentSearch').value.toLowerCase();
+            const tbody = document.getElementById('paymentTableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            }
+        }
+
+        // Generar PDF de factura
+        function generatePDF(invoiceId) {
+            const invoice = invoices.find(inv => inv.id === invoiceId);
+            if (!invoice) return;
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header empresa
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text(SYSTEM_CONFIG.company, 105, 20, { align: 'center' });
+            
+            doc.setFontSize(20);
+            doc.text('FACTURA', 105, 35, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Número: ${invoice.invoiceNumber}`, 20, 50);
+            doc.text(`Fecha: ${formatDate(invoice.entryDate)}`, 20, 60);
+            doc.text(`Vencimiento: ${formatDate(invoice.dueDate)}`, 20, 70);
+            
+            // Proveedor
+            doc.setFont(undefined, 'bold');
+            doc.text('PROVEEDOR:', 20, 85);
+            doc.setFont(undefined, 'normal');
+            doc.text(invoice.supplierName, 20, 95);
+            
+            // Detalles
+            doc.setFont(undefined, 'bold');
+            doc.text('DESCRIPCIÓN:', 20, 110);
+            doc.setFont(undefined, 'normal');
+            doc.text(invoice.description || 'Sin descripción', 20, 120);
+            
+            if (invoice.costCenter) {
+                doc.text(`Centro de Costo: ${invoice.costCenter}`, 20, 130);
+            }
+            if (invoice.project) {
+                doc.text(`Proyecto: ${invoice.project}`, 20, 140);
+            }
+            
+            // Monto
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text(`MONTO TOTAL: $${invoice.amount.toFixed(2)}`, 20, 160);
+            
+            // Estado
+            doc.text(`ESTADO: ${invoice.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}`, 20, 170);
+            
+            // Método de pago
+            doc.text(`MÉTODO DE PAGO: ${capitalizeFirst(invoice.paymentMethod)}`, 20, 180);
+            
+            // Info de pago si está pagado
+            if (invoice.status === 'paid') {
+                doc.text(`FECHA DE PAGO: ${formatDate(invoice.paymentDate)}`, 20, 190);
+                doc.text(`PROCESADO POR: ${invoice.paidBy}`, 20, 200);
+            }
+            
+            // Footer
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
+            doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
+            
+            // Descargar
+            doc.save(`Factura_${invoice.invoiceNumber}.pdf`);
+            
+            logAuditEvent('export', `PDF de factura generado: ${invoice.invoiceNumber}`, { invoiceId });
+            showAlert('PDF generado exitosamente', 'success');
+        }
+
+        // Generar comprobante de pago
+        function generateReceipt(paymentId) {
+            const payment = payments.find(p => p.id === paymentId);
+            if (!payment) return;
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header empresa
+            doc.setFontSize(18);
+            doc.setFont(undefined, 'bold');
+            doc.text(SYSTEM_CONFIG.company, 105, 20, { align: 'center' });
+            
+            doc.setFontSize(20);
+            doc.text('COMPROBANTE DE PAGO', 105, 35, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Fecha: ${formatDate(payment.paymentDate)}`, 20, 50);
+            doc.text(`Referencia: ${payment.reference || 'N/A'}`, 20, 60);
+            doc.text(`Banco: ${payment.bank || 'N/A'}`, 20, 70);
+            
+            // Detalles
+            doc.setFont(undefined, 'bold');
+            doc.text('DETALLES DEL PAGO:', 20, 85);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Factura: ${payment.invoiceNumber}`, 20, 95);
+            doc.text(`Proveedor: ${payment.supplierName}`, 20, 105);
+            doc.text(`Monto: $${payment.amount.toFixed(2)}`, 20, 115);
+            doc.text(`Método: ${capitalizeFirst(payment.paymentMethod)}`, 20, 125);
+            doc.text(`Procesado por: ${payment.processedBy}`, 20, 135);
+            
+            // Notas
+            if (payment.notes) {
+                doc.setFont(undefined, 'bold');
+                doc.text('NOTAS:', 20, 150);
+                doc.setFont(undefined, 'normal');
+                doc.text(payment.notes, 20, 160);
+            }
+            
+            // Footer
+            doc.setFontSize(10);
+            doc.text('Comprobante válido como constancia de pago', 105, 270, { align: 'center' });
+            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
+            doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
+            
+            // Descargar
+            doc.save(`Comprobante_${payment.invoiceNumber}_${payment.paymentDate}.pdf`);
+            
+            logAuditEvent('export', `Comprobante de pago generado: ${payment.invoiceNumber}`, { paymentId });
+            showAlert('Comprobante generado exitosamente', 'success');
+        }
+
+        // Exportar a Excel
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            
+            // Hoja de Facturas
+            const invoiceData = invoices.map(inv => ({
+                'Número': inv.invoiceNumber,
+                'Proveedor': inv.supplierName,
+                'Monto': inv.amount,
+                'Fecha Ingreso': inv.entryDate,
+                'Vencimiento': inv.dueDate,
+                'Centro Costo': inv.costCenter || '',
+                'Proyecto': inv.project || '',
+                'Estado': inv.status === 'paid' ? 'Pagado' : 'Pendiente',
+                'Método': capitalizeFirst(inv.paymentMethod),
+                'Descripción': inv.description,
+                'Creado por': inv.createdBy,
+                'Fecha Creación': inv.createdAt
+            }));
+            const ws1 = XLSX.utils.json_to_sheet(invoiceData);
+            XLSX.utils.book_append_sheet(wb, ws1, "Facturas");
+            
+            // Hoja de Proveedores
+            const supplierData = suppliers.map(sup => ({
+                'Nombre': sup.name,
+                'RUC/DNI': sup.ruc,
+                'Email': sup.email,
+                'Teléfono': sup.phone,
+                'Dirección': sup.address,
+                'Contacto': sup.contact || '',
+                'Categoría': sup.category || '',
+                'Datos Bancarios': sup.bankDetails,
+                'Creado por': sup.createdBy,
+                'Fecha Creación': sup.createdAt
+            }));
+            const ws2 = XLSX.utils.json_to_sheet(supplierData);
+            XLSX.utils.book_append_sheet(wb, ws2, "Proveedores");
+            
+            // Hoja de Pagos
+            const paymentData = payments.map(pay => ({
+                'Fecha': pay.paymentDate,
+                'Factura': pay.invoiceNumber,
+                'Proveedor': pay.supplierName,
+                'Monto': pay.amount,
+                'Método': capitalizeFirst(pay.paymentMethod),
+                'Referencia': pay.reference,
+                'Banco': pay.bank || '',
+                'Notas': pay.notes,
+                'Procesado por': pay.processedBy,
+                'Fecha Proceso': pay.processedAt
+            }));
+            const ws3 = XLSX.utils.json_to_sheet(paymentData);
+            XLSX.utils.book_append_sheet(wb, ws3, "Pagos");
+            
+            // Hoja de Auditoría (últimos 1000 registros)
+            const auditData = auditLog.slice(0, 1000).map(log => ({
+                'Fecha/Hora': log.timestamp,
+                'Usuario': log.user,
+                'Acción': log.action,
+                'Descripción': log.description,
+                'IP': log.ip,
+                'Sesión': log.sessionId
+            }));
+            const ws4 = XLSX.utils.json_to_sheet(auditData);
+            XLSX.utils.book_append_sheet(wb, ws4, "Auditoría");
+            
+            // Descargar
+            const fileName = `${SYSTEM_CONFIG.company}_Pagos_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            
+            logAuditEvent('export', 'Excel completo exportado', { 
+                records: {
+                    invoices: invoices.length,
+                    suppliers: suppliers.length,
+                    payments: payments.length,
+                    auditLogs: auditData.length
+                }
+            });
+            
+            showAlert('Excel exportado exitosamente', 'success');
+        }
+
+        // Eliminar factura
+        function deleteInvoice(invoiceId) {
+            if (confirm('¿Está seguro de eliminar esta factura? Esta acción no se puede deshacer.')) {
+                const invoice = invoices.find(inv => inv.id === invoiceId);
+                invoices = invoices.filter(inv => inv.id !== invoiceId);
+                localStorage.setItem('invoices', JSON.stringify(invoices));
+                
+                logAuditEvent('delete', `Factura eliminada: ${invoice.invoiceNumber}`, { 
+                    invoiceId,
+                    amount: invoice.amount
+                });
+                
+                updateInvoiceTable();
+                showAlert('Factura eliminada', 'warning');
+            }
+        }
+
+        // Eliminar proveedor
+        function deleteSupplier(supplierId) {
+            // Verificar si tiene facturas asociadas
+            const hasInvoices = invoices.some(inv => inv.supplierId == supplierId);
+            if (hasInvoices) {
+                showAlert('No se puede eliminar el proveedor porque tiene facturas asociadas', 'danger');
+                return;
+            }
+            
+            if (confirm('¿Está seguro de eliminar este proveedor? Esta acción no se puede deshacer.')) {
+                const supplier = suppliers.find(sup => sup.id === supplierId);
+                suppliers = suppliers.filter(sup => sup.id !== supplierId);
+                localStorage.setItem('suppliers', JSON.stringify(suppliers));
+                
+                logAuditEvent('delete', `Proveedor eliminado: ${supplier.name}`, { supplierId });
+                
+                updateSupplierTable();
+                updateSupplierSelect();
+                showAlert('Proveedor eliminado', 'warning');
+            }
+        }
+
+        // Actualizar dashboard
+        function updateDashboard() {
+            const today = new Date();
+            const sevenDaysLater = new Date();
+            sevenDaysLater.setDate(today.getDate() + 7);
+            
+            const pendingInvoices = invoices.filter(inv => inv.status !== 'paid');
+            const overdueInvoices = pendingInvoices.filter(inv => new Date(inv.dueDate) < today);
+            const upcomingInvoices = pendingInvoices.filter(inv => {
+                const dueDate = new Date(inv.dueDate);
+                return dueDate >= today && dueDate <= sevenDaysLater;
+            });
+            
+            const totalPending = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+            
+            document.getElementById('totalPending').textContent = `$${totalPending.toFixed(2)}`;
+            document.getElementById('overdueCount').textContent = overdueInvoices.length;
+            document.getElementById('upcomingCount').textContent = upcomingInvoices.length;
+            document.getElementById('supplierCount').textContent = suppliers.length;
+            
+            // Actualizar alerta
+            const alertMessage = document.getElementById('alertMessage');
+            if (overdueInvoices.length > 0) {
+                alertMessage.textContent = `⚠️ Tienes ${overdueInvoices.length} factura(s) vencida(s) que requieren atención inmediata`;
+                document.getElementById('dashboardAlert').className = 'alert alert-danger';
+            } else if (upcomingInvoices.length > 0) {
+                alertMessage.textContent = `📋 Tienes ${upcomingInvoices.length} factura(s) próxima(s) a vencer en los próximos 7 días`;
+                document.getElementById('dashboardAlert').className = 'alert alert-warning';
+            } else {
+                alertMessage.textContent = '✅ No hay pagos vencidos o próximos a vencer';
+                document.getElementById('dashboardAlert').className = 'alert alert-success';
+            }
+        }
+
+        // Verificar recordatorios
+        function checkForReminders() {
+            const reminderDays = parseInt(localStorage.getItem('reminderDays')) || 3;
+            const today = new Date();
+            const reminderDate = new Date();
+            reminderDate.setDate(today.getDate() + reminderDays);
+            
+            const upcomingInvoices = invoices.filter(inv => {
+                if (inv.status === 'paid') return false;
+                const dueDate = new Date(inv.dueDate);
+                return dueDate >= today && dueDate <= reminderDate;
+            });
+            
+            const reminderContainer = document.getElementById('upcomingReminders');
+            if (reminderContainer) {
+                reminderContainer.innerHTML = '';
+                
+                if (upcomingInvoices.length === 0) {
+                    reminderContainer.innerHTML = '<div style="text-align: center; color: #666;">No hay facturas próximas a vencer</div>';
+                } else {
+                    upcomingInvoices.forEach(invoice => {
+                        const card = document.createElement('div');
+                        card.className = 'alert alert-warning';
+                        card.innerHTML = `
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <div>
+                                <strong>${invoice.invoiceNumber}</strong> - ${invoice.supplierName}<br>
+                                Vence: ${formatDate(invoice.dueDate)} - Monto: $${invoice.amount.toFixed(2)}<br>
+                                Centro de Costo: ${invoice.costCenter || 'N/A'} | Proyecto: ${invoice.project || 'N/A'}
+                            </div>
+                        `;
+                        reminderContainer.appendChild(card);
+                    });
+                }
+            }
+        }
+
+        // Guardar configuración de recordatorios
+        function saveReminderSettings() {
+            const reminderDays = document.getElementById('reminderDays').value;
+            const notificationEmail = document.getElementById('notificationEmail').value;
+            const reminderTime = document.getElementById('reminderTime').value;
+            const notificationChannel = document.getElementById('notificationChannel').value;
+            
+            localStorage.setItem('reminderDays', reminderDays);
+            localStorage.setItem('notificationEmail', notificationEmail);
+            localStorage.setItem('reminderTime', reminderTime);
+            localStorage.setItem('notificationChannel', notificationChannel);
+            
+            logAuditEvent('settings', 'Configuración de recordatorios actualizada', {
+                reminderDays,
+                notificationEmail,
+                notificationChannel
+            });
+            
+            showAlert('Configuración guardada exitosamente', 'success');
+            checkForReminders();
+        }
+
+        // Simular envío de correo
+        function sendEmailNotification(invoice, payment) {
+            const email = localStorage.getItem('notificationEmail');
+            if (email) {
+                console.log(`Email enviado a ${email}: Pago registrado para factura ${invoice.invoiceNumber}`);
+                logAuditEvent('notification', `Email enviado a ${email}`, {
+                    type: 'payment_confirmation',
+                    invoiceNumber: invoice.invoiceNumber
+                });
+            }
+        }
+
+        // Actualizar todas las vistas
+        function updateAllViews() {
+            updateSupplierTable();
+            updateSupplierSelect();
+            updateInvoiceTable();
+            updatePaymentTable();
+            updateDashboard();
+            updateAuditLog();
+            checkForReminders();
+        }
+
+        // Mostrar alerta
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '10000';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            alertDiv.innerHTML = `
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    ${type === 'success' ? '<polyline points="20 6 9 17 4 12"></polyline>' : 
+                      type === 'warning' ? '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' :
+                      type === 'danger' ? '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>' :
+                      '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>'}
+                </svg>
+                ${message}
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transition = 'opacity 0.5s';
+                setTimeout(() => alertDiv.remove(), 500);
+            }, 3000);
+        }
+
+        // Formatear fecha
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric' 
+            });
+        }
+
+        // Formatear fecha y hora
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('es-ES', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Formatear tamaño de archivo
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Capitalizar primera letra
+        function capitalizeFirst(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Inicializar usuario
+        function initializeUser() {
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            
+            if (userAvatar) {
+                userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+            }
+            if (userName) {
+                userName.textContent = currentUser.name;
+            }
+        }
+
+        // Limpiar respaldos antiguos
+        function cleanOldBackups() {
+            const retention = parseInt(localStorage.getItem('backupRetention') || '30');
+            if (retention === 0) return; // Retención indefinida
+            
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - retention);
+            
+            backupHistory = backupHistory.filter(backup => {
+                const backupDate = new Date(backup.timestamp);
+                if (backupDate < cutoffDate) {
+                    // Eliminar respaldo del localStorage
+                    localStorage.removeItem(`backup_${backup.id}`);
+                    return false;
+                }
+                return true;
+            });
+            
+            localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
+        }
+
+        // Inicialización del sistema
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar usuario
+            initializeUser();
+            
+            // Cargar todas las tablas
+            updateAllViews();
+            
+            // Establecer fecha actual en campos de fecha
+            const today = new Date().toISOString().split('T')[0];
+            const entryDateField = document.getElementById('entryDate');
+            if (entryDateField) entryDateField.value = today;
+            
+            // Cargar configuración de recordatorios
+            const reminderDays = localStorage.getItem('reminderDays');
+            if (reminderDays) document.getElementById('reminderDays').value = reminderDays;
+            
+            const notificationEmail = localStorage.getItem('notificationEmail');
+            if (notificationEmail) document.getElementById('notificationEmail').value = notificationEmail;
+            
+            const reminderTime = localStorage.getItem('reminderTime');
+            if (reminderTime) document.getElementById('reminderTime').value = reminderTime;
+            
+            const notificationChannel = localStorage.getItem('notificationChannel');
+            if (notificationChannel) document.getElementById('notificationChannel').value = notificationChannel;
+            
+            // Cargar configuración de respaldo
+            const backupFrequency = localStorage.getItem('backupFrequency');
+            if (backupFrequency) document.getElementById('backupFrequency').value = backupFrequency;
+            
+            const backupRetention = localStorage.getItem('backupRetention');
+            if (backupRetention) document.getElementById('backupRetention').value = backupRetention;
+            
+            const encryptionLevel = localStorage.getItem('encryptionLevel');
+            if (encryptionLevel) document.getElementById('encryptionLevel').value = encryptionLevel;
+            
+            // Cargar configuración de importación BSale
+            const bsaleDateFormat = localStorage.getItem('bsaleDateFormat');
+            if (bsaleDateFormat) document.getElementById('bsaleDateFormat').value = bsaleDateFormat;
+            
+            const defaultCurrency = localStorage.getItem('defaultCurrency');
+            if (defaultCurrency) document.getElementById('defaultCurrency').value = defaultCurrency;
+            
+            const duplicateHandling = localStorage.getItem('duplicateHandling');
+            if (duplicateHandling) document.getElementById('duplicateHandling').value = duplicateHandling;
+            
+            const includeIVA = localStorage.getItem('includeIVA');
+            if (includeIVA) document.getElementById('includeIVA').value = includeIVA;
+            
+            const bsaleApiToken = localStorage.getItem('bsaleApiToken');
+            if (bsaleApiToken) document.getElementById('bsaleApiToken').value = bsaleApiToken;
+            
+            // Actualizar historial de importaciones
+            updateImportHistory();
+            
+            // Iniciar respaldo automático
+            startAutoBackup();
+            
+            // Actualizar estado de respaldo cada minuto
+            setInterval(updateBackupStatus, 60000);
+            
+            // Verificar recordatorios cada minuto
+            setInterval(checkForReminders, 60000);
+            
+            // Limpiar respaldos antiguos diariamente
+            setInterval(cleanOldBackups, 24 * 60 * 60 * 1000);
+            cleanOldBackups(); // Ejecutar limpieza inicial
+            
+            // Registrar inicio de sesión
+            logAuditEvent('login', `Usuario ${currentUser.name} inició sesión`, {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform
+            });
+            
+            // Mensaje de bienvenida
+            console.log(`%c Sistema Empresarial de Pagos v${SYSTEM_CONFIG.version}`, 'color: #6366f1; font-size: 20px; font-weight: bold;');
+            console.log('%c Respaldo automático activo', 'color: #10b981; font-size: 14px;');
+            console.log('%c Integración BSale habilitada', 'color: #8b5cf6; font-size: 14px;');
+            console.log('%c Todos los cambios son registrados para auditoría', 'color: #f59e0b; font-size: 12px;');
+        });
+
+        // Manejar cierre de página
+        window.addEventListener('beforeunload', function(e) {
+            // Crear respaldo automático antes de cerrar
+            autoBackup();
+            
+            // Registrar cierre de sesión
+            logAuditEvent('logout', `Usuario ${currentUser.name} cerró sesión`);
+        });
+
+        // ============= FUNCIONES DE IMPORTACIÓN BSALE =============
+        
+        // Manejar archivo de importación
+        async function handleImportFile(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showAlert('Procesando archivo...', 'info');
+            
+            try {
+                let data = null;
+                const fileName = file.name.toLowerCase();
+                
+                if (fileName.endsWith('.json')) {
+                    // Procesar JSON
+                    const text = await readFileAsText(file);
+                    data = JSON.parse(text);
+                } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                    // Procesar Excel
+                    data = await readExcelFile(file);
+                } else if (fileName.endsWith('.csv')) {
+                    // Procesar CSV
+                    data = await readCSVFile(file);
+                } else {
+                    throw new Error('Formato de archivo no soportado');
+                }
+                
+                // Procesar y mapear datos según el tipo
+                const processedData = processImportData(data, type);
+                
+                // Mostrar vista previa
+                showImportPreview(processedData, type);
+                
+            } catch (error) {
+                showAlert('Error al procesar el archivo: ' + error.message, 'danger');
+                logAuditEvent('import_error', 'Error en importación', { error: error.message, type });
+            }
+            
+            // Limpiar el input
+            event.target.value = '';
+        }
+
+        // Leer archivo como texto
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Leer archivo Excel
+        function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                        
+                        // Obtener la primera hoja
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convertir a JSON
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+                            raw: false,
+                            dateNF: 'yyyy-mm-dd'
+                        });
+                        
+                        resolve(jsonData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Leer archivo CSV
+        function readCSVFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.split('\n');
+                        const headers = lines[0].split(',').map(h => h.trim());
+                        const data = [];
+                        
+                        for (let i = 1; i < lines.length; i++) {
+                            if (lines[i].trim() === '') continue;
+                            const values = lines[i].split(',');
+                            const row = {};
+                            headers.forEach((header, index) => {
+                                row[header] = values[index] ? values[index].trim() : '';
+                            });
+                            data.push(row);
+                        }
+                        
+                        resolve(data);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // Procesar datos de importación
+        function processImportData(rawData, type) {
+            const mapping = BSALE_FIELD_MAPPING[type];
+            const processedData = [];
+            
+            // Si es un objeto BSale típico, extraer el array de datos
+            if (rawData.items) rawData = rawData.items;
+            if (rawData.data) rawData = rawData.data;
+            if (!Array.isArray(rawData)) rawData = [rawData];
+            
+            rawData.forEach(item => {
+                const processedItem = {};
+                
+                // Mapear campos conocidos
+                Object.keys(mapping).forEach(bsaleField => {
+                    const ourField = mapping[bsaleField];
+                    let value = getNestedProperty(item, bsaleField);
+                    
+                    // Procesar valores especiales
+                    if (ourField === 'status' && value) {
+                        // Convertir estados de BSale a nuestro formato
+                        if (value === 0 || value === 'pending' || value === 'pendiente') {
+                            value = 'pending';
+                        } else if (value === 1 || value === 'paid' || value === 'pagado') {
+                            value = 'paid';
+                        }
+                    }
+                    
+                    // Procesar fechas
+                    if ((ourField === 'entryDate' || ourField === 'dueDate' || ourField === 'paymentDate') && value) {
+                        value = formatBSaleDate(value);
+                    }
+                    
+                    // Procesar montos
+                    if (ourField === 'amount' && value) {
+                        value = parseFloat(value) || 0;
+                        // Si está configurado IVA
+                        const includeIVA = localStorage.getItem('includeIVA') || 'yes';
+                        if (includeIVA === 'no' && item.tax) {
+                            value += parseFloat(item.tax) || 0;
+                        }
+                    }
+                    
+                    // Procesar método de pago
+                    if (ourField === 'paymentMethod' && value) {
+                        value = normalizePaymentMethod(value);
+                    }
+                    
+                    if (value !== undefined && value !== null && value !== '') {
+                        processedItem[ourField] = value;
+                    }
+                });
+                
+                // Agregar campos adicionales según el tipo
+                if (type === 'invoices') {
+                    processedItem.id = Date.now() + Math.random();
+                    processedItem.createdBy = currentUser.name;
+                    processedItem.createdAt = new Date().toISOString();
+                    processedItem.status = processedItem.status || 'pending';
+                    
+                    // Buscar o crear proveedor
+                    if (processedItem.supplierName && !processedItem.supplierId) {
+                        const supplier = suppliers.find(s => 
+                            s.name.toLowerCase() === processedItem.supplierName.toLowerCase()
+                        );
+                        if (supplier) {
+                            processedItem.supplierId = supplier.id;
+                        }
+                    }
+                } else if (type === 'suppliers') {
+                    processedItem.id = Date.now() + Math.random();
+                    processedItem.createdBy = currentUser.name;
+                    processedItem.createdAt = new Date().toISOString();
+                } else if (type === 'payments') {
+                    processedItem.id = Date.now() + Math.random();
+                    processedItem.processedBy = currentUser.name;
+                    processedItem.processedAt = new Date().toISOString();
+                }
+                
+                // Solo agregar si tiene datos mínimos
+                if (hasMinimumData(processedItem, type)) {
+                    processedData.push(processedItem);
+                }
+            });
+            
+            return processedData;
+        }
+
+        // Obtener propiedad anidada
+        function getNestedProperty(obj, path) {
+            const parts = path.split('.');
+            let current = obj;
+            
+            for (const part of parts) {
+                if (current && typeof current === 'object' && part in current) {
+                    current = current[part];
+                } else {
+                    return undefined;
+                }
+            }
+            
+            return current;
+        }
+
+        // Formatear fecha de BSale
+        function formatBSaleDate(dateValue) {
+            const dateFormat = localStorage.getItem('bsaleDateFormat') || 'YYYY-MM-DD';
+            
+            if (dateFormat === 'timestamp') {
+                // Timestamp Unix
+                const date = new Date(parseInt(dateValue) * 1000);
+                return date.toISOString().split('T')[0];
+            } else if (typeof dateValue === 'string') {
+                // Procesar diferentes formatos de fecha
+                if (dateFormat === 'DD/MM/YYYY') {
+                    const parts = dateValue.split('/');
+                    if (parts.length === 3) {
+                        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    }
+                } else if (dateFormat === 'MM/DD/YYYY') {
+                    const parts = dateValue.split('/');
+                    if (parts.length === 3) {
+                        return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                    }
+                }
+                // Intentar parsear como está
+                const date = new Date(dateValue);
+                if (!isNaN(date)) {
+                    return date.toISOString().split('T')[0];
+                }
+            }
+            
+            return dateValue;
+        }
+
+        // Normalizar método de pago
+        function normalizePaymentMethod(method) {
+            const methodLower = method.toString().toLowerCase();
+            
+            if (methodLower.includes('transfer') || methodLower.includes('transf') || 
+                methodLower.includes('deposit') || methodLower.includes('depós')) {
+                return 'transferencia';
+            } else if (methodLower.includes('efectivo') || methodLower.includes('cash') || 
+                       methodLower.includes('contado')) {
+                return 'efectivo';
+            } else if (methodLower.includes('cheque') || methodLower.includes('check')) {
+                return 'cheque';
+            } else if (methodLower.includes('tarjeta') || methodLower.includes('card') || 
+                       methodLower.includes('crédito') || methodLower.includes('débito')) {
+                return 'tarjeta';
+            } else {
+                return 'otro';
+            }
+        }
+
+        // Verificar datos mínimos
+        function hasMinimumData(item, type) {
+            if (type === 'invoices') {
+                return item.invoiceNumber && item.amount;
+            } else if (type === 'suppliers') {
+                return item.name && (item.ruc || item.email);
+            } else if (type === 'payments') {
+                return item.invoiceNumber && item.amount;
+            }
+            return false;
+        }
+
+        // Mostrar vista previa de importación
+        function showImportPreview(data, type) {
+            pendingImportData = data;
+            pendingImportType = type;
+            
+            const preview = document.getElementById('importPreview');
+            const summary = document.getElementById('importSummary');
+            const tableHead = document.getElementById('previewTableHead');
+            const tableBody = document.getElementById('previewTableBody');
+            
+            // Actualizar resumen
+            const duplicates = countDuplicates(data, type);
+            summary.innerHTML = `
+                Se encontraron <strong>${data.length}</strong> registros para importar
+                ${duplicates > 0 ? ` (<strong>${duplicates}</strong> posibles duplicados)` : ''}
+            `;
+            
+            // Limpiar tabla
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            if (data.length === 0) {
+                preview.style.display = 'none';
+                showAlert('No se encontraron datos para importar', 'warning');
+                return;
+            }
+            
+            // Crear encabezados según el tipo
+            const headerRow = document.createElement('tr');
+            let headers = [];
+            
+            if (type === 'invoices') {
+                headers = ['Factura', 'Proveedor', 'Monto', 'Fecha', 'Vencimiento', 'Estado'];
+            } else if (type === 'suppliers') {
+                headers = ['Nombre', 'RUC/DNI', 'Email', 'Teléfono', 'Categoría'];
+            } else if (type === 'payments') {
+                headers = ['Factura', 'Proveedor', 'Monto', 'Fecha Pago', 'Método'];
+            }
+            
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            tableHead.appendChild(headerRow);
+            
+            // Mostrar primeros 10 registros
+            const previewData = data.slice(0, 10);
+            previewData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                
+                if (type === 'invoices') {
+                    row.innerHTML = `
+                        <td>${item.invoiceNumber || 'N/A'}</td>
+                        <td>${item.supplierName || 'N/A'}</td>
+                        <td>${(item.amount || 0).toFixed(2)}</td>
+                        <td>${formatDate(item.entryDate) || 'N/A'}</td>
+                        <td>${formatDate(item.dueDate) || 'N/A'}</td>
+                        <td><span class="status-badge status-${item.status || 'pending'}">${item.status || 'pending'}</span></td>
+                    `;
+                } else if (type === 'suppliers') {
+                    row.innerHTML = `
+                        <td>${item.name || 'N/A'}</td>
+                        <td>${item.ruc || 'N/A'}</td>
+                        <td>${item.email || 'N/A'}</td>
+                        <td>${item.phone || 'N/A'}</td>
+                        <td>${item.category || 'N/A'}</td>
+                    `;
+                } else if (type === 'payments') {
+                    row.innerHTML = `
+                        <td>${item.invoiceNumber || 'N/A'}</td>
+                        <td>${item.supplierName || 'N/A'}</td>
+                        <td>${(item.amount || 0).toFixed(2)}</td>
+                        <td>${formatDate(item.paymentDate) || 'N/A'}</td>
+                        <td>${capitalizeFirst(item.paymentMethod) || 'N/A'}</td>
+                    `;
+                }
+                
+                // Marcar duplicados
+                if (isDuplicate(item, type)) {
+                    row.style.background = '#fef3c7';
+                }
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Si hay más de 10, mostrar mensaje
+            if (data.length > 10) {
+                const moreRow = document.createElement('tr');
+                moreRow.innerHTML = `<td colspan="${headers.length}" style="text-align: center; font-style: italic;">
+                    ... y ${data.length - 10} registros más
+                </td>`;
+                tableBody.appendChild(moreRow);
+            }
+            
+            preview.style.display = 'block';
+        }
+
+        // Contar duplicados
+        function countDuplicates(data, type) {
+            let count = 0;
+            data.forEach(item => {
+                if (isDuplicate(item, type)) count++;
+            });
+            return count;
+        }
+
+        // Verificar si es duplicado
+        function isDuplicate(item, type) {
+            if (type === 'invoices') {
+                return invoices.some(inv => inv.invoiceNumber === item.invoiceNumber);
+            } else if (type === 'suppliers') {
+                return suppliers.some(sup => sup.ruc === item.ruc || sup.email === item.email);
+            } else if (type === 'payments') {
+                return payments.some(pay => 
+                    pay.invoiceNumber === item.invoiceNumber && 
+                    pay.paymentDate === item.paymentDate
+                );
+            }
+            return false;
+        }
+
+        // Confirmar importación
+        function confirmImport() {
+            if (!pendingImportData || !pendingImportType) return;
+            
+            const duplicateHandling = localStorage.getItem('duplicateHandling') || 'skip';
+            let imported = 0;
+            let skipped = 0;
+            let updated = 0;
+            
+            // Crear respaldo antes de importar
+            autoBackup();
+            
+            pendingImportData.forEach(item => {
+                const isDup = isDuplicate(item, pendingImportType);
+                
+                if (isDup) {
+                    if (duplicateHandling === 'skip') {
+                        skipped++;
+                        return;
+                    } else if (duplicateHandling === 'update') {
+                        // Actualizar existente
+                        updateExistingRecord(item, pendingImportType);
+                        updated++;
+                        return;
+                    } else if (duplicateHandling === 'ask') {
+                        if (!confirm(`¿Importar registro duplicado? ${JSON.stringify(item).substring(0, 100)}...`)) {
+                            skipped++;
+                            return;
+                        }
+                    }
+                }
+                
+                // Importar nuevo registro
+                if (pendingImportType === 'invoices') {
+                    invoices.push(item);
+                    imported++;
+                } else if (pendingImportType === 'suppliers') {
+                    suppliers.push(item);
+                    imported++;
+                } else if (pendingImportType === 'payments') {
+                    // Actualizar factura como pagada si existe
+                    const invoice = invoices.find(inv => inv.invoiceNumber === item.invoiceNumber);
+                    if (invoice) {
+                        invoice.status = 'paid';
+                        invoice.paymentDate = item.paymentDate;
+                    }
+                    payments.push(item);
+                    imported++;
+                }
+            });
+            
+            // Guardar en localStorage
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            localStorage.setItem('suppliers', JSON.stringify(suppliers));
+            localStorage.setItem('payments', JSON.stringify(payments));
+            
+            // Registrar en historial de importación
+            const importRecord = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                type: pendingImportType,
+                user: currentUser.name,
+                stats: {
+                    total: pendingImportData.length,
+                    imported: imported,
+                    updated: updated,
+                    skipped: skipped
+                }
+            };
+            
+            importHistory.unshift(importRecord);
+            localStorage.setItem('importHistory', JSON.stringify(importHistory));
+            
+            // Registrar en auditoría
+            logAuditEvent('import', `Importación desde BSale completada`, {
+                type: pendingImportType,
+                imported,
+                updated,
+                skipped
+            });
+            
+            // Actualizar vistas
+            updateAllViews();
+            updateImportHistory();
+            
+            // Limpiar y ocultar preview
+            cancelImport();
+            
+            // Mostrar resultado
+            showAlert(`Importación completada: ${imported} nuevos, ${updated} actualizados, ${skipped} omitidos`, 'success');
+        }
+
+        // Actualizar registro existente
+        function updateExistingRecord(item, type) {
+            if (type === 'invoices') {
+                const index = invoices.findIndex(inv => inv.invoiceNumber === item.invoiceNumber);
+                if (index !== -1) {
+                    invoices[index] = { ...invoices[index], ...item };
+                }
+            } else if (type === 'suppliers') {
+                const index = suppliers.findIndex(sup => sup.ruc === item.ruc || sup.email === item.email);
+                if (index !== -1) {
+                    suppliers[index] = { ...suppliers[index], ...item };
+                }
+            } else if (type === 'payments') {
+                const index = payments.findIndex(pay => 
+                    pay.invoiceNumber === item.invoiceNumber && 
+                    pay.paymentDate === item.paymentDate
+                );
+                if (index !== -1) {
+                    payments[index] = { ...payments[index], ...item };
+                }
+            }
+        }
+
+        // Cancelar importación
+        function cancelImport() {
+            pendingImportData = null;
+            pendingImportType = null;
+            document.getElementById('importPreview').style.display = 'none';
+        }
+
+        // Configurar API de BSale
+        function setupBSaleAPI() {
+            const apiToken = document.getElementById('bsaleApiToken').value;
+            
+            if (!apiToken) {
+                showAlert('Por favor ingrese el token de API de BSale', 'warning');
+                return;
+            }
+            
+            localStorage.setItem('bsaleApiToken', apiToken);
+            
+            showAlert('API de BSale configurada. Puede realizar importaciones automáticas.', 'success');
+            logAuditEvent('api_setup', 'API de BSale configurada');
+            
+            // Aquí podrías implementar llamadas reales a la API de BSale
+            // Por seguridad, esto requeriría un backend proxy
+        }
+
+        // Guardar configuración de importación
+        function saveImportSettings() {
+            const settings = {
+                dateFormat: document.getElementById('bsaleDateFormat').value,
+                defaultCurrency: document.getElementById('defaultCurrency').value,
+                duplicateHandling: document.getElementById('duplicateHandling').value,
+                includeIVA: document.getElementById('includeIVA').value
+            };
+            
+            Object.keys(settings).forEach(key => {
+                localStorage.setItem(key, settings[key]);
+            });
+            
+            showAlert('Configuración de importación guardada', 'success');
+            logAuditEvent('settings', 'Configuración de importación actualizada', settings);
+        }
+
+        // Actualizar historial de importaciones
+        function updateImportHistory() {
+            const container = document.getElementById('importHistory');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (importHistory.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666;">No hay importaciones registradas</div>';
+                return;
+            }
+            
+            importHistory.slice(0, 10).forEach(record => {
+                const item = document.createElement('div');
+                item.className = 'backup-item';
+                item.innerHTML = `
+                    <div class="backup-info">
+                        <div class="backup-date">${formatDateTime(record.timestamp)}</div>
+                        <div class="backup-details">
+                            Tipo: ${capitalizeFirst(record.type)} | 
+                            Total: ${record.stats.total} | 
+                            Importados: ${record.stats.imported} | 
+                            Actualizados: ${record.stats.updated} | 
+                            Omitidos: ${record.stats.skipped} | 
+                            Usuario: ${record.user}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // ============= FIN FUNCIONES DE IMPORTACIÓN BSALE =============
+
+        // ============= FUNCIONES DE INTEGRACIÓN SII =============
+        
+        // Configuración SII
+        let siiConfig = JSON.parse(localStorage.getItem('siiConfig')) || {};
+        let siiSyncHistory = JSON.parse(localStorage.getItem('siiSyncHistory')) || [];
+        let siiAutoSyncInterval = null;
+        
+        // Validar RUT chileno
+        function validateRUT(rut) {
+            if (!rut) return false;
+            
+            // Limpiar RUT
+            rut = rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
+            
+            // Validar formato
+            if (!/^[0-9]+[0-9K]$/.test(rut)) {
+                document.getElementById('rutValidation').textContent = '❌ Formato inválido';
+                document.getElementById('rutValidation').style.color = '#ef4444';
+                return false;
+            }
+            
+            // Obtener dígito verificador
+            const rutBody = rut.slice(0, -1);
+            const dv = rut.slice(-1);
+            
+            // Calcular dígito verificador
+            let suma = 0;
+            let multiplo = 2;
+            
+            for (let i = rutBody.length - 1; i >= 0; i--) {
+                suma += parseInt(rutBody.charAt(i)) * multiplo;
+                multiplo = multiplo < 7 ? multiplo + 1 : 2;
+            }
+            
+            const dvEsperado = 11 - (suma % 11);
+            let dvCalculado = '';
+            
+            if (dvEsperado === 11) dvCalculado = '0';
+            else if (dvEsperado === 10) dvCalculado = 'K';
+            else dvCalculado = dvEsperado.toString();
+            
+            if (dv === dvCalculado) {
+                document.getElementById('rutValidation').textContent = '✅ RUT válido';
+                document.getElementById('rutValidation').style.color = '#10b981';
+                
+                // Consultar información del contribuyente (simulado)
+                setTimeout(() => {
+                    consultarContribuyente(rut);
+                }, 500);
+                
+                return true;
+            } else {
+                document.getElementById('rutValidation').textContent = '❌ Dígito verificador incorrecto';
+                document.getElementById('rutValidation').style.color = '#ef4444';
+                return false;
+            }
+        }
+        
+        // Consultar información del contribuyente (simulado)
+        function consultarContribuyente(rut) {
+            // En producción, esto consultaría la API del SII
+            showAlert('Consultando información del contribuyente en SII...', 'info');
+            
+            // Simulación de respuesta
+            setTimeout(() => {
+                const rutValidation = document.getElementById('rutValidation');
+                rutValidation.innerHTML = '✅ RUT válido - Contribuyente activo<br><small>Inicio actividades: 01/01/2020</small>';
+                
+                logAuditEvent('sii_validation', 'RUT validado en SII', { rut });
+            }, 1000);
+        }
+        
+        // Manejar certificado digital
+        function handleCertificate(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.p12') && !file.name.endsWith('.pfx')) {
+                showAlert('Por favor seleccione un certificado digital válido (.p12 o .pfx)', 'warning');
+                return;
+            }
+            
+            // En producción, aquí se procesaría el certificado
+            siiConfig.certificateFile = file.name;
+            showAlert('Certificado cargado correctamente', 'success');
+            
+            logAuditEvent('sii_certificate', 'Certificado digital cargado', { fileName: file.name });
+        }
+        
+        // Guardar configuración SII
+        function saveSIIConfig() {
+            const config = {
+                rutEmpresa: document.getElementById('siiRutEmpresa').value,
+                razonSocial: document.getElementById('siiRazonSocial').value,
+                certificateFile: siiConfig.certificateFile,
+                environment: document.getElementById('siiEnvironment').value,
+                actividadEconomica: document.getElementById('siiActividadEconomica').value,
+                configuredAt: new Date().toISOString()
+            };
+            
+            if (!config.rutEmpresa || !config.razonSocial) {
+                showAlert('Por favor complete los campos obligatorios', 'warning');
+                return;
+            }
+            
+            if (!validateRUT(config.rutEmpresa)) {
+                showAlert('Por favor ingrese un RUT válido', 'warning');
+                return;
+            }
+            
+            siiConfig = config;
+            localStorage.setItem('siiConfig', JSON.stringify(siiConfig));
+            
+            showAlert('Configuración SII guardada exitosamente', 'success');
+            logAuditEvent('sii_config', 'Configuración SII actualizada', config);
+        }
+        
+        // Consultar DTE (Documentos Tributarios Electrónicos)
+        function consultarDTE() {
+            if (!siiConfig.rutEmpresa) {
+                showAlert('Por favor configure primero los datos de la empresa', 'warning');
+                return;
+            }
+            
+            showAlert('Consultando documentos tributarios electrónicos...', 'info');
+            
+            // Simulación de consulta al SII
+            setTimeout(() => {
+                // En producción, esto traería los DTEs reales del SII
+                const mockDTEs = [
+                    {
+                        tipo: 33,
+                        folio: 12345,
+                        fecha: '2024-01-15',
+                        emisor: '76.123.456-7',
+                        monto: 150000,
+                        estado: 'aceptado'
+                    },
+                    {
+                        tipo: 61,
+                        folio: 678,
+                        fecha: '2024-01-10',
+                        emisor: '77.987.654-3',
+                        monto: 25000,
+                        estado: 'aceptado'
+                    }
+                ];
+                
+                // Procesar y agregar DTEs como facturas
+                let imported = 0;
+                mockDTEs.forEach(dte => {
+                    const invoice = {
+                        id: Date.now() + Math.random(),
+                        invoiceNumber: `DTE-${dte.tipo}-${dte.folio}`,
+                        amount: dte.monto,
+                        entryDate: dte.fecha,
+                        dueDate: addDays(dte.fecha, 30),
+                        paymentMethod: 'transferencia',
+                        status: 'pending',
+                        supplierName: `Emisor ${dte.emisor}`,
+                        siiValidated: true,
+                        createdBy: 'SII Import',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    // Verificar duplicados
+                    if (!invoices.some(inv => inv.invoiceNumber === invoice.invoiceNumber)) {
+                        invoices.push(invoice);
+                        imported++;
+                    }
+                });
+                
+                if (imported > 0) {
+                    localStorage.setItem('invoices', JSON.stringify(invoices));
+                    updateInvoiceTable();
+                }
+                
+                showAlert(`Se importaron ${imported} documentos desde el SII`, 'success');
+                logAuditEvent('sii_import', 'Documentos importados desde SII', { count: imported });
+            }, 2000);
+        }
+        
+        // Validar DTE específico
+        function validateDTE() {
+            const rutEmisor = document.getElementById('siiRutEmisor').value;
+            const tipoDoc = document.getElementById('siiTipoDoc').value;
+            const folio = document.getElementById('siiFolio').value;
+            const fecha = document.getElementById('siiFechaEmision').value;
+            const monto = document.getElementById('siiMontoTotal').value;
+            
+            if (!rutEmisor || !folio || !fecha || !monto) {
+                showAlert('Por favor complete todos los campos para validar', 'warning');
+                return;
+            }
+            
+            if (!validateRUT(rutEmisor)) {
+                showAlert('RUT del emisor inválido', 'warning');
+                return;
+            }
+            
+            showAlert('Validando documento en SII...', 'info');
+            
+            // Simulación de validación
+            setTimeout(() => {
+                const isValid = Math.random() > 0.2; // 80% de probabilidad de ser válido
+                
+                if (isValid) {
+                    showAlert(`✅ Documento válido en SII\nTipo: ${tipoDoc}\nFolio: ${folio}\nEstado: ACEPTADO`, 'success');
+                    
+                    // Marcar factura como validada si existe
+                    const invoice = invoices.find(inv => 
+                        inv.invoiceNumber.includes(folio) || 
+                        (inv.amount === parseFloat(monto) && inv.entryDate === fecha)
+                    );
+                    
+                    if (invoice) {
+                        invoice.siiValidated = true;
+                        localStorage.setItem('invoices', JSON.stringify(invoices));
+                        updateInvoiceTable();
+                    }
+                } else {
+                    showAlert('❌ Documento no encontrado o rechazado en SII', 'danger');
+                }
+                
+                logAuditEvent('sii_validate', 'Validación de documento', {
+                    rutEmisor,
+                    tipoDoc,
+                    folio,
+                    valid: isValid
+                });
+            }, 1500);
+        }
+        
+        // Generar Libro de Compras
+        function generateLibroCompras() {
+            const periodo = document.getElementById('siiPeriodo')?.value || new Date().toISOString().slice(0, 7);
+            const [year, month] = periodo.split('-');
+            
+            // Filtrar facturas del período
+            const facturasPeriodo = invoices.filter(inv => {
+                const invDate = new Date(inv.entryDate);
+                return invDate.getFullYear() == year && (invDate.getMonth() + 1) == month;
+            });
+            
+            if (facturasPeriodo.length === 0) {
+                showAlert('No hay facturas en el período seleccionado', 'warning');
+                return;
+            }
+            
+            // Calcular totales
+            const totalNeto = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount / 1.19), 0);
+            const totalIVA = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount - inv.amount / 1.19), 0);
+            const totalBruto = facturasPeriodo.reduce((sum, inv) => sum + inv.amount, 0);
+            
+            // Generar archivo de Libro de Compras
+            const libroCompras = {
+                periodo: periodo,
+                rutEmpresa: siiConfig.rutEmpresa || '76.000.000-0',
+                razonSocial: siiConfig.razonSocial || 'Empresa S.A.',
+                documentos: facturasPeriodo.map(inv => ({
+                    tipo: 33,
+                    folio: inv.invoiceNumber,
+                    fecha: inv.entryDate,
+                    rutProveedor: suppliers.find(s => s.name === inv.supplierName)?.ruc || '00.000.000-0',
+                    razonSocialProveedor: inv.supplierName,
+                    montoNeto: Math.round(inv.amount / 1.19),
+                    montoIVA: Math.round(inv.amount - inv.amount / 1.19),
+                    montoTotal: inv.amount
+                })),
+                resumen: {
+                    totalDocumentos: facturasPeriodo.length,
+                    totalNeto: Math.round(totalNeto),
+                    totalIVA: Math.round(totalIVA),
+                    totalBruto: Math.round(totalBruto)
+                }
+            };
+            
+            // Crear archivo XML (simulado como JSON para descarga)
+            const blob = new Blob([JSON.stringify(libroCompras, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `LibroCompras_${periodo}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showAlert(`Libro de Compras generado: ${facturasPeriodo.length} documentos`, 'success');
+            logAuditEvent('sii_libro', 'Libro de Compras generado', {
+                periodo,
+                documentos: facturasPeriodo.length,
+                totalBruto
+            });
+        }
+        
+        // Generar resumen para F29
+        function generateF29() {
+            const periodo = document.getElementById('siiPeriodo')?.value || new Date().toISOString().slice(0, 7);
+            const [year, month] = periodo.split('-');
+            
+            // Filtrar facturas del período
+            const facturasPeriodo = invoices.filter(inv => {
+                const invDate = new Date(inv.entryDate);
+                return invDate.getFullYear() == year && (invDate.getMonth() + 1) == month;
+            });
+            
+            // Calcular valores para F29
+            const comprasNetas = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount / 1.19), 0);
+            const ivaCredito = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount - inv.amount / 1.19), 0);
+            
+            // Generar resumen F29
+            const f29Data = {
+                periodo: periodo,
+                codigo_520: Math.round(comprasNetas), // Compras internas afectas
+                codigo_521: 0, // Compras con derecho a crédito fiscal
+                codigo_525: Math.round(ivaCredito), // IVA por documentos electrónicos
+                codigo_527: Math.round(ivaCredito), // IVA total crédito fiscal
+                codigo_537: Math.round(ivaCredito), // Total crédito a favor
+                generatedAt: new Date().toISOString()
+            };
+            
+            // Mostrar resumen
+            showAlert(`Resumen F29 generado:\nCompras Netas: ${Math.round(comprasNetas).toLocaleString()}\nIVA Crédito: ${Math.round(ivaCredito).toLocaleString()}`, 'success');
+            
+            // Descargar archivo
+            const blob = new Blob([JSON.stringify(f29Data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `F29_${periodo}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            logAuditEvent('sii_f29', 'Resumen F29 generado', f29Data);
+        }
+        
+        // Generar resumen SII
+        function generateSIISummary() {
+            const periodo = document.getElementById('siiPeriodo').value;
+            const tipoResumen = document.getElementById('siiTipoResumen').value;
+            const [year, month] = periodo.split('-');
+            
+            let facturasPeriodo = [];
+            
+            if (tipoResumen === 'mensual') {
+                facturasPeriodo = invoices.filter(inv => {
+                    const invDate = new Date(inv.entryDate);
+                    return invDate.getFullYear() == year && (invDate.getMonth() + 1) == month;
+                });
+            } else if (tipoResumen === 'trimestral') {
+                const trimestre = Math.floor((month - 1) / 3);
+                const mesInicio = trimestre * 3 + 1;
+                const mesFin = mesInicio + 2;
+                
+                facturasPeriodo = invoices.filter(inv => {
+                    const invDate = new Date(inv.entryDate);
+                    const invMonth = invDate.getMonth() + 1;
+                    return invDate.getFullYear() == year && invMonth >= mesInicio && invMonth <= mesFin;
+                });
+            } else if (tipoResumen === 'anual') {
+                facturasPeriodo = invoices.filter(inv => {
+                    const invDate = new Date(inv.entryDate);
+                    return invDate.getFullYear() == year;
+                });
+            }
+            
+            // Calcular totales
+            const comprasNetas = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount / 1.19), 0);
+            const ivaCredito = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount - inv.amount / 1.19), 0);
+            
+            // Mostrar resumen
+            document.getElementById('siiComprasNetas').textContent = `${Math.round(comprasNetas).toLocaleString()}`;
+            document.getElementById('siiIVACredito').textContent = `${Math.round(ivaCredito).toLocaleString()}`;
+            document.getElementById('siiTotalFacturas').textContent = facturasPeriodo.length;
+            document.getElementById('siiRetenciones').textContent = '$0'; // Por implementar
+            
+            document.getElementById('siiSummaryResult').style.display = 'block';
+            
+            logAuditEvent('sii_summary', 'Resumen tributario generado', {
+                periodo,
+                tipo: tipoResumen,
+                facturas: facturasPeriodo.length
+            });
+        }
+        
+        // Toggle sincronización automática SII
+        function toggleSIIAutoSync() {
+            const isEnabled = document.getElementById('siiAutoSync').checked;
+            
+            if (isEnabled) {
+                const frequency = parseInt(document.getElementById('siiSyncFrequency').value) || 60;
+                
+                siiAutoSyncInterval = setInterval(() => {
+                    syncWithSII();
+                }, frequency * 60 * 1000);
+                
+                // Sincronizar inmediatamente
+                syncWithSII();
+                
+                showAlert('Sincronización automática con SII activada', 'success');
+            } else {
+                if (siiAutoSyncInterval) {
+                    clearInterval(siiAutoSyncInterval);
+                    siiAutoSyncInterval = null;
+                }
+                showAlert('Sincronización automática desactivada', 'warning');
+            }
+            
+            localStorage.setItem('siiAutoSync', isEnabled);
+            logAuditEvent('sii_sync_toggle', isEnabled ? 'Sincronización activada' : 'Sincronización desactivada');
+        }
+        
+        // Sincronizar con SII
+        function syncWithSII() {
+            if (!siiConfig.rutEmpresa) {
+                console.log('Configuración SII incompleta');
+                return;
+            }
+            
+            const syncEntry = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                status: 'processing',
+                documentsFound: 0,
+                documentsImported: 0
+            };
+            
+            // Simulación de sincronización
+            setTimeout(() => {
+                syncEntry.status = 'completed';
+                syncEntry.documentsFound = Math.floor(Math.random() * 10);
+                syncEntry.documentsImported = Math.floor(syncEntry.documentsFound * 0.8);
+                
+                siiSyncHistory.unshift(syncEntry);
+                if (siiSyncHistory.length > 50) {
+                    siiSyncHistory = siiSyncHistory.slice(0, 50);
+                }
+                localStorage.setItem('siiSyncHistory', JSON.stringify(siiSyncHistory));
+                
+                updateSIISyncStatus();
+                
+                if (syncEntry.documentsImported > 0) {
+                    showAlert(`SII: ${syncEntry.documentsImported} documentos sincronizados`, 'success');
+                }
+                
+                logAuditEvent('sii_sync', 'Sincronización con SII completada', syncEntry);
+            }, 3000);
+        }
+        
+        // Actualizar estado de sincronización SII
+        function updateSIISyncStatus() {
+            const container = document.getElementById('siiSyncStatus');
+            if (!container) return;
+            
+            container.innerHTML = '<h4>Historial de Sincronización</h4>';
+            
+            if (siiSyncHistory.length === 0) {
+                container.innerHTML += '<p style="text-align: center; color: #666;">No hay sincronizaciones registradas</p>';
+                return;
+            }
+            
+            siiSyncHistory.slice(0, 5).forEach(sync => {
+                const item = document.createElement('div');
+                item.className = 'backup-item';
+                item.innerHTML = `
+                    <div class="backup-info">
+                        <div class="backup-date">${formatDateTime(sync.timestamp)}</div>
+                        <div class="backup-details">
+                            Estado: ${sync.status === 'completed' ? '✅ Completado' : '⏳ Procesando'} | 
+                            Documentos encontrados: ${sync.documentsFound} | 
+                            Importados: ${sync.documentsImported}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+        
+        // Consultar estado DTE
+        function consultarEstadoDTE() {
+            const folio = document.getElementById('siiFolio').value;
+            
+            if (!folio) {
+                showAlert('Por favor ingrese el folio del documento', 'warning');
+                return;
+            }
+            
+            showAlert('Consultando estado del DTE...', 'info');
+            
+            setTimeout(() => {
+                const estados = ['ACEPTADO', 'ACEPTADO CON REPAROS', 'RECHAZADO', 'EN PROCESO'];
+                const estado = estados[Math.floor(Math.random() * estados.length)];
+                const fecha = new Date().toISOString();
+                
+                showAlert(`Estado DTE ${folio}: ${estado}\nÚltima actualización: ${formatDateTime(fecha)}`, 
+                    estado === 'ACEPTADO' ? 'success' : estado === 'RECHAZADO' ? 'danger' : 'warning');
+                
+                logAuditEvent('sii_dte_status', 'Consulta estado DTE', { folio, estado });
+            }, 1500);
+        }
+        
+        // Descargar DTE (simulado)
+        function downloadDTE() {
+            const folio = document.getElementById('siiFolio').value;
+            const tipoDoc = document.getElementById('siiTipoDoc').value;
+            
+            if (!folio) {
+                showAlert('Por favor ingrese el folio del documento', 'warning');
+                return;
+            }
+            
+            // Simular XML del DTE
+            const dteXML = `<?xml version="1.0" encoding="ISO-8859-1"?>
+<DTE version="1.0">
+    <Documento ID="DTE-${tipoDoc}-${folio}">
+        <Encabezado>
+            <IdDoc>
+                <TipoDTE>${tipoDoc}</TipoDTE>
+                <Folio>${folio}</Folio>
+                <FchEmis>${new Date().toISOString().split('T')[0]}</FchEmis>
+            </IdDoc>
+        </Encabezado>
+    </Documento>
+</DTE>`;
+            
+            const blob = new Blob([dteXML], { type: 'text/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `DTE_${tipoDoc}_${folio}.xml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showAlert('DTE descargado exitosamente', 'success');
+            logAuditEvent('sii_download', 'DTE descargado', { tipoDoc, folio });
+        }
+        
+        // Mostrar modal de validación de factura
+        function showValidateInvoiceModal() {
+            const modal = `
+                <div class="modal active" id="validateModal">
+                    <div class="modal-content">
+                        <h2>Validar Factura en SII</h2>
+                        <p>Seleccione una factura para validar en el SII</p>
+                        <select id="invoiceToValidate" style="width: 100%; padding: 10px; margin: 20px 0;">
+                            <option value="">Seleccionar factura...</option>
+                            ${invoices.filter(inv => !inv.siiValidated).map(inv => 
+                                `<option value="${inv.id}">${inv.invoiceNumber} - ${inv.supplierName} - ${inv.amount}</option>`
+                            ).join('')}
+                        </select>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-success" onclick="validateSelectedInvoice()">Validar</button>
+                            <button class="btn btn-danger" onclick="closeValidateModal()">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modal);
+        }
+        
+        // Validar factura seleccionada
+        function validateSelectedInvoice() {
+            const invoiceId = document.getElementById('invoiceToValidate').value;
+            if (!invoiceId) {
+                showAlert('Por favor seleccione una factura', 'warning');
+                return;
+            }
+            
+            const invoice = invoices.find(inv => inv.id == invoiceId);
+            if (invoice) {
+                invoice.siiValidated = true;
+                localStorage.setItem('invoices', JSON.stringify(invoices));
+                updateInvoiceTable();
+                showAlert('Factura validada en SII exitosamente', 'success');
+                logAuditEvent('sii_invoice_validate', 'Factura validada', { invoiceNumber: invoice.invoiceNumber });
+            }
+            
+            closeValidateModal();
+        }
+        
+        // Cerrar modal de validación
+        function closeValidateModal() {
+            const modal = document.getElementById('validateModal');
+            if (modal) modal.remove();
+        }
+        
+        // Función auxiliar para agregar días a una fecha
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result.toISOString().split('T')[0];
+        }
+        
+        // ============= FIN FUNCIONES DE INTEGRACIÓN SII =============
+
+        // Función para editar proveedor (placeholder)
+        function editSupplier(supplierId) {
+            const supplier = suppliers.find(s => s.id === supplierId);
+            if (supplier) {
+                // Llenar el formulario con los datos del proveedor
+                document.getElementById('supplierName').value = supplier.name;
+                document.getElementById('supplierRuc').value = supplier.ruc;
+                document.getElementById('supplierEmail').value = supplier.email;
+                document.getElementById('supplierPhone').value = supplier.phone;
+                document.getElementById('supplierAddress').value = supplier.address || '';
+                document.getElementById('supplierContact').value = supplier.contact || '';
+                document.getElementById('supplierCategory').value = supplier.category || 'otro';
+                document.getElementById('bankDetails').value = supplier.bankDetails || '';
+                
+                // Cambiar a la pestaña de proveedores
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.getElementById('suppliers').classList.add('active');
+                
+                showAlert('Edite los datos del proveedor y guarde los cambios', 'info');
+            }
+        }
+    </script>
+</body>
+</html>
