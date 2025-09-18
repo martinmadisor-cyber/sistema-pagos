@@ -639,7 +639,6 @@
             <button class="tab" onclick="switchTab('suppliers')">Proveedores</button>
             <button class="tab" onclick="switchTab('payments')">Historial de Pagos</button>
             <button class="tab" onclick="switchTab('import')">Importar BSale</button>
-            <button class="tab" onclick="switchTab('sii')">SII Integration</button>
             <button class="tab" onclick="switchTab('backup')">Respaldo y Seguridad</button>
             <button class="tab" onclick="switchTab('audit')">Auditoría</button>
             <button class="tab" onclick="switchTab('reminders')">Recordatorios</button>
@@ -776,8 +775,8 @@
                         <input type="text" id="supplierName" required placeholder="Nombre completo">
                     </div>
                     <div class="form-group">
-                        <label>RUC/DNI *</label>
-                        <input type="text" id="supplierRuc" required placeholder="12345678901">
+                        <label>RUT *</label>
+                        <input type="text" id="supplierRuc" required placeholder="12.345.678-9">
                     </div>
                     <div class="form-group">
                         <label>Email *</label>
@@ -785,7 +784,7 @@
                     </div>
                     <div class="form-group">
                         <label>Teléfono *</label>
-                        <input type="tel" id="supplierPhone" required placeholder="+51 999 999 999">
+                        <input type="tel" id="supplierPhone" required placeholder="+56 9 9999 9999">
                     </div>
                     <div class="form-group">
                         <label>Dirección</label>
@@ -826,7 +825,7 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>RUC/DNI</th>
+                                <th>RUT</th>
                                 <th>Email</th>
                                 <th>Teléfono</th>
                                 <th>Categoría</th>
@@ -1037,298 +1036,6 @@
                     <h3 style="margin-bottom: 20px;">📝 Historial de Importaciones</h3>
                     <div class="backup-history" id="importHistory">
                         <!-- Se llenará dinámicamente -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Integración SII -->
-            <div id="sii" class="tab-content">
-                <h2 style="margin-bottom: 20px;">🇨🇱 Integración con Servicio de Impuestos Internos (SII)</h2>
-                
-                <div class="alert alert-info">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                    </svg>
-                    <span>Sistema integrado con el SII para validación tributaria, documentos electrónicos y cumplimiento fiscal automático.</span>
-                </div>
-
-                <div class="backup-panel" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-color: #f59e0b;">
-                    <h3>🔐 Configuración de Certificado Digital SII</h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>RUT Empresa *</label>
-                            <input type="text" id="siiRutEmpresa" placeholder="76.XXX.XXX-X" onblur="validateRUT(this.value)">
-                            <small id="rutValidation" style="color: #065f46;"></small>
-                        </div>
-                        <div class="form-group">
-                            <label>Razón Social *</label>
-                            <input type="text" id="siiRazonSocial" placeholder="Nombre de la empresa">
-                        </div>
-                        <div class="form-group">
-                            <label>Certificado Digital (.p12)</label>
-                            <input type="file" id="siiCertificate" accept=".p12,.pfx" style="display: none;" onchange="handleCertificate(event)">
-                            <button class="btn btn-secondary" onclick="document.getElementById('siiCertificate').click()">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0110 0v4"></path>
-                                </svg>
-                                Cargar Certificado
-                            </button>
-                        </div>
-                        <div class="form-group">
-                            <label>Contraseña Certificado</label>
-                            <input type="password" id="siiCertPassword" placeholder="********">
-                        </div>
-                        <div class="form-group">
-                            <label>Ambiente</label>
-                            <select id="siiEnvironment">
-                                <option value="certificacion">Certificación (Pruebas)</option>
-                                <option value="produccion">Producción</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Actividad Económica</label>
-                            <select id="siiActividadEconomica">
-                                <option value="">Seleccionar actividad</option>
-                                <option value="461000">Venta al por mayor a cambio de comisión</option>
-                                <option value="462000">Venta al por mayor de materias primas</option>
-                                <option value="463000">Venta al por mayor de enseres domésticos</option>
-                                <option value="464100">Venta al por mayor de productos textiles</option>
-                                <option value="465100">Venta al por mayor de computadores</option>
-                                <option value="620100">Actividades de programación informática</option>
-                                <option value="702000">Actividades de consultoría de gestión</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button class="btn btn-warning" onclick="saveSIIConfig()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
-                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        </svg>
-                        Guardar Configuración SII
-                    </button>
-                </div>
-
-                <div class="stats-grid" style="margin-top: 30px;">
-                    <div class="stat-card">
-                        <h3>📄 Documentos Electrónicos</h3>
-                        <button class="btn btn-primary" style="margin-top: 10px;" onclick="consultarDTE()">
-                            Consultar DTE
-                        </button>
-                    </div>
-                    <div class="stat-card">
-                        <h3>✅ Validar Factura</h3>
-                        <button class="btn btn-success" style="margin-top: 10px;" onclick="showValidateInvoiceModal()">
-                            Validar Documento
-                        </button>
-                    </div>
-                    <div class="stat-card">
-                        <h3>📚 Libro de Compras</h3>
-                        <button class="btn btn-warning" style="margin-top: 10px;" onclick="generateLibroCompras()">
-                            Generar Libro
-                        </button>
-                    </div>
-                    <div class="stat-card">
-                        <h3>🧾 Reportes F29</h3>
-                        <button class="btn btn-danger" style="margin-top: 10px;" onclick="generateF29()">
-                            Preparar F29
-                        </button>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px;">
-                    <h3 style="margin-bottom: 20px;">🔍 Consulta y Validación de Documentos</h3>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>RUT Emisor</label>
-                            <input type="text" id="siiRutEmisor" placeholder="76.XXX.XXX-X">
-                        </div>
-                        <div class="form-group">
-                            <label>Tipo de Documento</label>
-                            <select id="siiTipoDoc">
-                                <option value="33">Factura Electrónica</option>
-                                <option value="34">Factura Exenta Electrónica</option>
-                                <option value="61">Nota de Crédito Electrónica</option>
-                                <option value="56">Nota de Débito Electrónica</option>
-                                <option value="52">Guía de Despacho Electrónica</option>
-                                <option value="39">Boleta Electrónica</option>
-                                <option value="41">Boleta Exenta Electrónica</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Folio</label>
-                            <input type="number" id="siiFolio" placeholder="12345">
-                        </div>
-                        <div class="form-group">
-                            <label>Fecha Emisión</label>
-                            <input type="date" id="siiFechaEmision">
-                        </div>
-                        <div class="form-group">
-                            <label>Monto Total</label>
-                            <input type="number" id="siiMontoTotal" placeholder="0">
-                        </div>
-                        <div class="form-group">
-                            <label>Código de Verificación</label>
-                            <input type="text" id="siiCodigoVerificacion" placeholder="ABC123...">
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-primary" onclick="validateDTE()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            Validar en SII
-                        </button>
-                        <button class="btn btn-success" onclick="downloadDTE()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                            </svg>
-                            Descargar XML
-                        </button>
-                        <button class="btn btn-warning" onclick="consultarEstadoDTE()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="16" x2="12" y2="12"></line>
-                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                            </svg>
-                            Estado DTE
-                        </button>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px;">
-                    <h3 style="margin-bottom: 20px;">📊 Resumen Tributario del Período</h3>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Período</label>
-                            <input type="month" id="siiPeriodo" value="${new Date().toISOString().slice(0, 7)}">
-                        </div>
-                        <div class="form-group">
-                            <label>Tipo de Resumen</label>
-                            <select id="siiTipoResumen">
-                                <option value="mensual">Mensual</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="anual">Anual</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <button class="btn btn-primary" onclick="generateSIISummary()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                            <polyline points="10 9 9 9 8 9"></polyline>
-                        </svg>
-                        Generar Resumen
-                    </button>
-                    
-                    <div id="siiSummaryResult" style="margin-top: 20px; display: none;">
-                        <div class="backup-panel">
-                            <h4>Resumen del Período</h4>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <h3>Compras Netas</h3>
-                                    <div class="stat-value" id="siiComprasNetas">$0</div>
-                                </div>
-                                <div class="stat-card">
-                                    <h3>IVA Crédito Fiscal</h3>
-                                    <div class="stat-value" id="siiIVACredito">$0</div>
-                                </div>
-                                <div class="stat-card">
-                                    <h3>Total Facturas</h3>
-                                    <div class="stat-value" id="siiTotalFacturas">0</div>
-                                </div>
-                                <div class="stat-card">
-                                    <h3>Retenciones</h3>
-                                    <div class="stat-value" id="siiRetenciones">$0</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px;">
-                    <h3 style="margin-bottom: 20px;">🔄 Sincronización Automática</h3>
-                    
-                    <div class="alert alert-warning">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>
-                            <line x1="12" y1="9" x2="12" y2="13"></line>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg>
-                        <span>La sincronización automática descargará y validará facturas electrónicas cada hora durante el horario laboral.</span>
-                    </div>
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="siiAutoSync" onchange="toggleSIIAutoSync()">
-                                Activar sincronización automática
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>Frecuencia</label>
-                            <select id="siiSyncFrequency">
-                                <option value="60">Cada hora</option>
-                                <option value="120">Cada 2 horas</option>
-                                <option value="240">Cada 4 horas</option>
-                                <option value="1440">Diario</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Horario de sincronización</label>
-                            <select id="siiSyncSchedule">
-                                <option value="business">Horario laboral (9:00 - 18:00)</option>
-                                <option value="always">24/7</option>
-                                <option value="custom">Personalizado</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div id="siiSyncStatus" class="backup-history" style="margin-top: 20px;">
-                        <!-- Se llenará con el estado de sincronización -->
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px;">
-                    <h3 style="margin-bottom: 20px;">📈 Estado de Cumplimiento Tributario</h3>
-                    
-                    <div class="backup-panel" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-color: #10b981;">
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <h3>Estado Contribuyente</h3>
-                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                                    <div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%;"></div>
-                                    <span style="font-weight: 600;">Activo</span>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Certificado Digital</h3>
-                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                                    <div style="width: 12px; height: 12px; background: #f59e0b; border-radius: 50%;"></div>
-                                    <span style="font-weight: 600;">Vence en 30 días</span>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Declaraciones F29</h3>
-                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                                    <div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%;"></div>
-                                    <span style="font-weight: 600;">Al día</span>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Folios Disponibles</h3>
-                                <div style="font-size: 24px; font-weight: 700; margin-top: 10px;">
-                                    1,245
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1613,9 +1320,9 @@
                 'name': 'name',
                 'nombre': 'name',
                 'company': 'name',
-                'code': 'ruc',
-                'rut': 'ruc',
-                'dni': 'ruc',
+                'code': 'rut',
+                'rut': 'rut',
+                'dni': 'rut',
                 'email': 'email',
                 'correo': 'email',
                 'phone': 'phone',
@@ -1675,8 +1382,6 @@
                 updateBackupHistory();
             } else if (tabName === 'import') {
                 updateImportHistory();
-            } else if (tabName === 'sii') {
-                updateSIISyncStatus();
             }
 
             logAuditEvent('navigation', `Navegó a ${tabName}`);
@@ -2118,7 +1823,7 @@
             const supplier = {
                 id: Date.now(),
                 name: document.getElementById('supplierName').value,
-                ruc: document.getElementById('supplierRuc').value,
+                rut: document.getElementById('supplierRuc').value,
                 email: document.getElementById('supplierEmail').value,
                 phone: document.getElementById('supplierPhone').value,
                 address: document.getElementById('supplierAddress').value,
@@ -2129,7 +1834,7 @@
                 createdAt: new Date().toISOString()
             };
             
-            if (!supplier.name || !supplier.ruc || !supplier.email) {
+            if (!supplier.name || !supplier.rut || !supplier.email) {
                 showAlert('Por favor complete los campos obligatorios', 'warning');
                 return;
             }
@@ -2195,7 +1900,7 @@
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td>${supplier.name}</td>
-                    <td>${supplier.ruc}</td>
+                    <td>${supplier.rut}</td>
                     <td>${supplier.email}</td>
                     <td>${supplier.phone}</td>
                     <td>${supplier.category || 'N/A'}</td>
@@ -2426,7 +2131,7 @@
             // Monto
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text(`MONTO TOTAL: $${invoice.amount.toFixed(2)}`, 20, 160);
+            doc.text(`MONTO TOTAL: ${invoice.amount.toFixed(2)}`, 20, 160);
             
             // Estado
             doc.text(`ESTADO: ${invoice.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}`, 20, 170);
@@ -2443,7 +2148,7 @@
             // Footer
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
-            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
+            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v3.0', 105, 280, { align: 'center' });
             doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
             
             // Descargar
@@ -2481,7 +2186,7 @@
             doc.setFont(undefined, 'normal');
             doc.text(`Factura: ${payment.invoiceNumber}`, 20, 95);
             doc.text(`Proveedor: ${payment.supplierName}`, 20, 105);
-            doc.text(`Monto: $${payment.amount.toFixed(2)}`, 20, 115);
+            doc.text(`Monto: ${payment.amount.toFixed(2)}`, 20, 115);
             doc.text(`Método: ${capitalizeFirst(payment.paymentMethod)}`, 20, 125);
             doc.text(`Procesado por: ${payment.processedBy}`, 20, 135);
             
@@ -2496,7 +2201,7 @@
             // Footer
             doc.setFontSize(10);
             doc.text('Comprobante válido como constancia de pago', 105, 270, { align: 'center' });
-            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
+            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v3.0', 105, 280, { align: 'center' });
             doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
             
             // Descargar
@@ -2531,7 +2236,7 @@
             // Hoja de Proveedores
             const supplierData = suppliers.map(sup => ({
                 'Nombre': sup.name,
-                'RUC/DNI': sup.ruc,
+                'RUT': sup.rut,
                 'Email': sup.email,
                 'Teléfono': sup.phone,
                 'Dirección': sup.address,
@@ -2642,7 +2347,7 @@
             
             const totalPending = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
             
-            document.getElementById('totalPending').textContent = `$${totalPending.toFixed(2)}`;
+            document.getElementById('totalPending').textContent = `${totalPending.toFixed(2)}`;
             document.getElementById('overdueCount').textContent = overdueInvoices.length;
             document.getElementById('upcomingCount').textContent = upcomingInvoices.length;
             document.getElementById('supplierCount').textContent = suppliers.length;
@@ -2692,7 +2397,7 @@
                             </svg>
                             <div>
                                 <strong>${invoice.invoiceNumber}</strong> - ${invoice.supplierName}<br>
-                                Vence: ${formatDate(invoice.dueDate)} - Monto: $${invoice.amount.toFixed(2)}<br>
+                                Vence: ${formatDate(invoice.dueDate)} - Monto: ${invoice.amount.toFixed(2)}<br>
                                 Centro de Costo: ${invoice.costCenter || 'N/A'} | Proyecto: ${invoice.project || 'N/A'}
                             </div>
                         `;
@@ -2847,96 +2552,6 @@
             
             localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
         }
-
-        // Inicialización del sistema
-        document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar usuario
-            initializeUser();
-            
-            // Cargar todas las tablas
-            updateAllViews();
-            
-            // Establecer fecha actual en campos de fecha
-            const today = new Date().toISOString().split('T')[0];
-            const entryDateField = document.getElementById('entryDate');
-            if (entryDateField) entryDateField.value = today;
-            
-            // Cargar configuración de recordatorios
-            const reminderDays = localStorage.getItem('reminderDays');
-            if (reminderDays) document.getElementById('reminderDays').value = reminderDays;
-            
-            const notificationEmail = localStorage.getItem('notificationEmail');
-            if (notificationEmail) document.getElementById('notificationEmail').value = notificationEmail;
-            
-            const reminderTime = localStorage.getItem('reminderTime');
-            if (reminderTime) document.getElementById('reminderTime').value = reminderTime;
-            
-            const notificationChannel = localStorage.getItem('notificationChannel');
-            if (notificationChannel) document.getElementById('notificationChannel').value = notificationChannel;
-            
-            // Cargar configuración de respaldo
-            const backupFrequency = localStorage.getItem('backupFrequency');
-            if (backupFrequency) document.getElementById('backupFrequency').value = backupFrequency;
-            
-            const backupRetention = localStorage.getItem('backupRetention');
-            if (backupRetention) document.getElementById('backupRetention').value = backupRetention;
-            
-            const encryptionLevel = localStorage.getItem('encryptionLevel');
-            if (encryptionLevel) document.getElementById('encryptionLevel').value = encryptionLevel;
-            
-            // Cargar configuración de importación BSale
-            const bsaleDateFormat = localStorage.getItem('bsaleDateFormat');
-            if (bsaleDateFormat) document.getElementById('bsaleDateFormat').value = bsaleDateFormat;
-            
-            const defaultCurrency = localStorage.getItem('defaultCurrency');
-            if (defaultCurrency) document.getElementById('defaultCurrency').value = defaultCurrency;
-            
-            const duplicateHandling = localStorage.getItem('duplicateHandling');
-            if (duplicateHandling) document.getElementById('duplicateHandling').value = duplicateHandling;
-            
-            const includeIVA = localStorage.getItem('includeIVA');
-            if (includeIVA) document.getElementById('includeIVA').value = includeIVA;
-            
-            const bsaleApiToken = localStorage.getItem('bsaleApiToken');
-            if (bsaleApiToken) document.getElementById('bsaleApiToken').value = bsaleApiToken;
-            
-            // Actualizar historial de importaciones
-            updateImportHistory();
-            
-            // Iniciar respaldo automático
-            startAutoBackup();
-            
-            // Actualizar estado de respaldo cada minuto
-            setInterval(updateBackupStatus, 60000);
-            
-            // Verificar recordatorios cada minuto
-            setInterval(checkForReminders, 60000);
-            
-            // Limpiar respaldos antiguos diariamente
-            setInterval(cleanOldBackups, 24 * 60 * 60 * 1000);
-            cleanOldBackups(); // Ejecutar limpieza inicial
-            
-            // Registrar inicio de sesión
-            logAuditEvent('login', `Usuario ${currentUser.name} inició sesión`, {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform
-            });
-            
-            // Mensaje de bienvenida
-            console.log(`%c Sistema Empresarial de Pagos v${SYSTEM_CONFIG.version}`, 'color: #6366f1; font-size: 20px; font-weight: bold;');
-            console.log('%c Respaldo automático activo', 'color: #10b981; font-size: 14px;');
-            console.log('%c Integración BSale habilitada', 'color: #8b5cf6; font-size: 14px;');
-            console.log('%c Todos los cambios son registrados para auditoría', 'color: #f59e0b; font-size: 12px;');
-        });
-
-        // Manejar cierre de página
-        window.addEventListener('beforeunload', function(e) {
-            // Crear respaldo automático antes de cerrar
-            autoBackup();
-            
-            // Registrar cierre de sesión
-            logAuditEvent('logout', `Usuario ${currentUser.name} cerró sesión`);
-        });
 
         // ============= FUNCIONES DE IMPORTACIÓN BSALE =============
         
@@ -3210,7 +2825,7 @@
             if (type === 'invoices') {
                 return item.invoiceNumber && item.amount;
             } else if (type === 'suppliers') {
-                return item.name && (item.ruc || item.email);
+                return item.name && (item.rut || item.email);
             } else if (type === 'payments') {
                 return item.invoiceNumber && item.amount;
             }
@@ -3251,7 +2866,7 @@
             if (type === 'invoices') {
                 headers = ['Factura', 'Proveedor', 'Monto', 'Fecha', 'Vencimiento', 'Estado'];
             } else if (type === 'suppliers') {
-                headers = ['Nombre', 'RUC/DNI', 'Email', 'Teléfono', 'Categoría'];
+                headers = ['Nombre', 'RUT', 'Email', 'Teléfono', 'Categoría'];
             } else if (type === 'payments') {
                 headers = ['Factura', 'Proveedor', 'Monto', 'Fecha Pago', 'Método'];
             }
@@ -3280,7 +2895,7 @@
                 } else if (type === 'suppliers') {
                     row.innerHTML = `
                         <td>${item.name || 'N/A'}</td>
-                        <td>${item.ruc || 'N/A'}</td>
+                        <td>${item.rut || 'N/A'}</td>
                         <td>${item.email || 'N/A'}</td>
                         <td>${item.phone || 'N/A'}</td>
                         <td>${item.category || 'N/A'}</td>
@@ -3329,7 +2944,7 @@
             if (type === 'invoices') {
                 return invoices.some(inv => inv.invoiceNumber === item.invoiceNumber);
             } else if (type === 'suppliers') {
-                return suppliers.some(sup => sup.ruc === item.ruc || sup.email === item.email);
+                return suppliers.some(sup => sup.rut === item.rut || sup.email === item.email);
             } else if (type === 'payments') {
                 return payments.some(pay => 
                     pay.invoiceNumber === item.invoiceNumber && 
@@ -3439,7 +3054,7 @@
                     invoices[index] = { ...invoices[index], ...item };
                 }
             } else if (type === 'suppliers') {
-                const index = suppliers.findIndex(sup => sup.ruc === item.ruc || sup.email === item.email);
+                const index = suppliers.findIndex(sup => sup.rut === item.rut || sup.email === item.email);
                 if (index !== -1) {
                     suppliers[index] = { ...suppliers[index], ...item };
                 }
@@ -3482,7 +3097,7 @@
         // Guardar configuración de importación
         function saveImportSettings() {
             const settings = {
-                dateFormat: document.getElementById('bsaleDateFormat').value,
+                bsaleDateFormat: document.getElementById('bsaleDateFormat').value,
                 defaultCurrency: document.getElementById('defaultCurrency').value,
                 duplicateHandling: document.getElementById('duplicateHandling').value,
                 includeIVA: document.getElementById('includeIVA').value
@@ -3530,610 +3145,13 @@
 
         // ============= FIN FUNCIONES DE IMPORTACIÓN BSALE =============
 
-        // ============= FUNCIONES DE INTEGRACIÓN SII =============
-        
-        // Configuración SII
-        let siiConfig = JSON.parse(localStorage.getItem('siiConfig')) || {};
-        let siiSyncHistory = JSON.parse(localStorage.getItem('siiSyncHistory')) || [];
-        let siiAutoSyncInterval = null;
-        
-        // Validar RUT chileno
-        function validateRUT(rut) {
-            if (!rut) return false;
-            
-            // Limpiar RUT
-            rut = rut.replace(/\./g, '').replace(/-/g, '').toUpperCase();
-            
-            // Validar formato
-            if (!/^[0-9]+[0-9K]$/.test(rut)) {
-                document.getElementById('rutValidation').textContent = '❌ Formato inválido';
-                document.getElementById('rutValidation').style.color = '#ef4444';
-                return false;
-            }
-            
-            // Obtener dígito verificador
-            const rutBody = rut.slice(0, -1);
-            const dv = rut.slice(-1);
-            
-            // Calcular dígito verificador
-            let suma = 0;
-            let multiplo = 2;
-            
-            for (let i = rutBody.length - 1; i >= 0; i--) {
-                suma += parseInt(rutBody.charAt(i)) * multiplo;
-                multiplo = multiplo < 7 ? multiplo + 1 : 2;
-            }
-            
-            const dvEsperado = 11 - (suma % 11);
-            let dvCalculado = '';
-            
-            if (dvEsperado === 11) dvCalculado = '0';
-            else if (dvEsperado === 10) dvCalculado = 'K';
-            else dvCalculado = dvEsperado.toString();
-            
-            if (dv === dvCalculado) {
-                document.getElementById('rutValidation').textContent = '✅ RUT válido';
-                document.getElementById('rutValidation').style.color = '#10b981';
-                
-                // Consultar información del contribuyente (simulado)
-                setTimeout(() => {
-                    consultarContribuyente(rut);
-                }, 500);
-                
-                return true;
-            } else {
-                document.getElementById('rutValidation').textContent = '❌ Dígito verificador incorrecto';
-                document.getElementById('rutValidation').style.color = '#ef4444';
-                return false;
-            }
-        }
-        
-        // Consultar información del contribuyente (simulado)
-        function consultarContribuyente(rut) {
-            // En producción, esto consultaría la API del SII
-            showAlert('Consultando información del contribuyente en SII...', 'info');
-            
-            // Simulación de respuesta
-            setTimeout(() => {
-                const rutValidation = document.getElementById('rutValidation');
-                rutValidation.innerHTML = '✅ RUT válido - Contribuyente activo<br><small>Inicio actividades: 01/01/2020</small>';
-                
-                logAuditEvent('sii_validation', 'RUT validado en SII', { rut });
-            }, 1000);
-        }
-        
-        // Manejar certificado digital
-        function handleCertificate(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!file.name.endsWith('.p12') && !file.name.endsWith('.pfx')) {
-                showAlert('Por favor seleccione un certificado digital válido (.p12 o .pfx)', 'warning');
-                return;
-            }
-            
-            // En producción, aquí se procesaría el certificado
-            siiConfig.certificateFile = file.name;
-            showAlert('Certificado cargado correctamente', 'success');
-            
-            logAuditEvent('sii_certificate', 'Certificado digital cargado', { fileName: file.name });
-        }
-        
-        // Guardar configuración SII
-        function saveSIIConfig() {
-            const config = {
-                rutEmpresa: document.getElementById('siiRutEmpresa').value,
-                razonSocial: document.getElementById('siiRazonSocial').value,
-                certificateFile: siiConfig.certificateFile,
-                environment: document.getElementById('siiEnvironment').value,
-                actividadEconomica: document.getElementById('siiActividadEconomica').value,
-                configuredAt: new Date().toISOString()
-            };
-            
-            if (!config.rutEmpresa || !config.razonSocial) {
-                showAlert('Por favor complete los campos obligatorios', 'warning');
-                return;
-            }
-            
-            if (!validateRUT(config.rutEmpresa)) {
-                showAlert('Por favor ingrese un RUT válido', 'warning');
-                return;
-            }
-            
-            siiConfig = config;
-            localStorage.setItem('siiConfig', JSON.stringify(siiConfig));
-            
-            showAlert('Configuración SII guardada exitosamente', 'success');
-            logAuditEvent('sii_config', 'Configuración SII actualizada', config);
-        }
-        
-        // Consultar DTE (Documentos Tributarios Electrónicos)
-        function consultarDTE() {
-            if (!siiConfig.rutEmpresa) {
-                showAlert('Por favor configure primero los datos de la empresa', 'warning');
-                return;
-            }
-            
-            showAlert('Consultando documentos tributarios electrónicos...', 'info');
-            
-            // Simulación de consulta al SII
-            setTimeout(() => {
-                // En producción, esto traería los DTEs reales del SII
-                const mockDTEs = [
-                    {
-                        tipo: 33,
-                        folio: 12345,
-                        fecha: '2024-01-15',
-                        emisor: '76.123.456-7',
-                        monto: 150000,
-                        estado: 'aceptado'
-                    },
-                    {
-                        tipo: 61,
-                        folio: 678,
-                        fecha: '2024-01-10',
-                        emisor: '77.987.654-3',
-                        monto: 25000,
-                        estado: 'aceptado'
-                    }
-                ];
-                
-                // Procesar y agregar DTEs como facturas
-                let imported = 0;
-                mockDTEs.forEach(dte => {
-                    const invoice = {
-                        id: Date.now() + Math.random(),
-                        invoiceNumber: `DTE-${dte.tipo}-${dte.folio}`,
-                        amount: dte.monto,
-                        entryDate: dte.fecha,
-                        dueDate: addDays(dte.fecha, 30),
-                        paymentMethod: 'transferencia',
-                        status: 'pending',
-                        supplierName: `Emisor ${dte.emisor}`,
-                        siiValidated: true,
-                        createdBy: 'SII Import',
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    // Verificar duplicados
-                    if (!invoices.some(inv => inv.invoiceNumber === invoice.invoiceNumber)) {
-                        invoices.push(invoice);
-                        imported++;
-                    }
-                });
-                
-                if (imported > 0) {
-                    localStorage.setItem('invoices', JSON.stringify(invoices));
-                    updateInvoiceTable();
-                }
-                
-                showAlert(`Se importaron ${imported} documentos desde el SII`, 'success');
-                logAuditEvent('sii_import', 'Documentos importados desde SII', { count: imported });
-            }, 2000);
-        }
-        
-        // Validar DTE específico
-        function validateDTE() {
-            const rutEmisor = document.getElementById('siiRutEmisor').value;
-            const tipoDoc = document.getElementById('siiTipoDoc').value;
-            const folio = document.getElementById('siiFolio').value;
-            const fecha = document.getElementById('siiFechaEmision').value;
-            const monto = document.getElementById('siiMontoTotal').value;
-            
-            if (!rutEmisor || !folio || !fecha || !monto) {
-                showAlert('Por favor complete todos los campos para validar', 'warning');
-                return;
-            }
-            
-            if (!validateRUT(rutEmisor)) {
-                showAlert('RUT del emisor inválido', 'warning');
-                return;
-            }
-            
-            showAlert('Validando documento en SII...', 'info');
-            
-            // Simulación de validación
-            setTimeout(() => {
-                const isValid = Math.random() > 0.2; // 80% de probabilidad de ser válido
-                
-                if (isValid) {
-                    showAlert(`✅ Documento válido en SII\nTipo: ${tipoDoc}\nFolio: ${folio}\nEstado: ACEPTADO`, 'success');
-                    
-                    // Marcar factura como validada si existe
-                    const invoice = invoices.find(inv => 
-                        inv.invoiceNumber.includes(folio) || 
-                        (inv.amount === parseFloat(monto) && inv.entryDate === fecha)
-                    );
-                    
-                    if (invoice) {
-                        invoice.siiValidated = true;
-                        localStorage.setItem('invoices', JSON.stringify(invoices));
-                        updateInvoiceTable();
-                    }
-                } else {
-                    showAlert('❌ Documento no encontrado o rechazado en SII', 'danger');
-                }
-                
-                logAuditEvent('sii_validate', 'Validación de documento', {
-                    rutEmisor,
-                    tipoDoc,
-                    folio,
-                    valid: isValid
-                });
-            }, 1500);
-        }
-        
-        // Generar Libro de Compras
-        function generateLibroCompras() {
-            const periodo = document.getElementById('siiPeriodo')?.value || new Date().toISOString().slice(0, 7);
-            const [year, month] = periodo.split('-');
-            
-            // Filtrar facturas del período
-            const facturasPeriodo = invoices.filter(inv => {
-                const invDate = new Date(inv.entryDate);
-                return invDate.getFullYear() == year && (invDate.getMonth() + 1) == month;
-            });
-            
-            if (facturasPeriodo.length === 0) {
-                showAlert('No hay facturas en el período seleccionado', 'warning');
-                return;
-            }
-            
-            // Calcular totales
-            const totalNeto = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount / 1.19), 0);
-            const totalIVA = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount - inv.amount / 1.19), 0);
-            const totalBruto = facturasPeriodo.reduce((sum, inv) => sum + inv.amount, 0);
-            
-            // Generar archivo de Libro de Compras
-            const libroCompras = {
-                periodo: periodo,
-                rutEmpresa: siiConfig.rutEmpresa || '76.000.000-0',
-                razonSocial: siiConfig.razonSocial || 'Empresa S.A.',
-                documentos: facturasPeriodo.map(inv => ({
-                    tipo: 33,
-                    folio: inv.invoiceNumber,
-                    fecha: inv.entryDate,
-                    rutProveedor: suppliers.find(s => s.name === inv.supplierName)?.ruc || '00.000.000-0',
-                    razonSocialProveedor: inv.supplierName,
-                    montoNeto: Math.round(inv.amount / 1.19),
-                    montoIVA: Math.round(inv.amount - inv.amount / 1.19),
-                    montoTotal: inv.amount
-                })),
-                resumen: {
-                    totalDocumentos: facturasPeriodo.length,
-                    totalNeto: Math.round(totalNeto),
-                    totalIVA: Math.round(totalIVA),
-                    totalBruto: Math.round(totalBruto)
-                }
-            };
-            
-            // Crear archivo XML (simulado como JSON para descarga)
-            const blob = new Blob([JSON.stringify(libroCompras, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `LibroCompras_${periodo}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            showAlert(`Libro de Compras generado: ${facturasPeriodo.length} documentos`, 'success');
-            logAuditEvent('sii_libro', 'Libro de Compras generado', {
-                periodo,
-                documentos: facturasPeriodo.length,
-                totalBruto
-            });
-        }
-        
-        // Generar resumen para F29
-        function generateF29() {
-            const periodo = document.getElementById('siiPeriodo')?.value || new Date().toISOString().slice(0, 7);
-            const [year, month] = periodo.split('-');
-            
-            // Filtrar facturas del período
-            const facturasPeriodo = invoices.filter(inv => {
-                const invDate = new Date(inv.entryDate);
-                return invDate.getFullYear() == year && (invDate.getMonth() + 1) == month;
-            });
-            
-            // Calcular valores para F29
-            const comprasNetas = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount / 1.19), 0);
-            const ivaCredito = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount - inv.amount / 1.19), 0);
-            
-            // Generar resumen F29
-            const f29Data = {
-                periodo: periodo,
-                codigo_520: Math.round(comprasNetas), // Compras internas afectas
-                codigo_521: 0, // Compras con derecho a crédito fiscal
-                codigo_525: Math.round(ivaCredito), // IVA por documentos electrónicos
-                codigo_527: Math.round(ivaCredito), // IVA total crédito fiscal
-                codigo_537: Math.round(ivaCredito), // Total crédito a favor
-                generatedAt: new Date().toISOString()
-            };
-            
-            // Mostrar resumen
-            showAlert(`Resumen F29 generado:\nCompras Netas: ${Math.round(comprasNetas).toLocaleString()}\nIVA Crédito: ${Math.round(ivaCredito).toLocaleString()}`, 'success');
-            
-            // Descargar archivo
-            const blob = new Blob([JSON.stringify(f29Data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `F29_${periodo}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            logAuditEvent('sii_f29', 'Resumen F29 generado', f29Data);
-        }
-        
-        // Generar resumen SII
-        function generateSIISummary() {
-            const periodo = document.getElementById('siiPeriodo').value;
-            const tipoResumen = document.getElementById('siiTipoResumen').value;
-            const [year, month] = periodo.split('-');
-            
-            let facturasPeriodo = [];
-            
-            if (tipoResumen === 'mensual') {
-                facturasPeriodo = invoices.filter(inv => {
-                    const invDate = new Date(inv.entryDate);
-                    return invDate.getFullYear() == year && (invDate.getMonth() + 1) == month;
-                });
-            } else if (tipoResumen === 'trimestral') {
-                const trimestre = Math.floor((month - 1) / 3);
-                const mesInicio = trimestre * 3 + 1;
-                const mesFin = mesInicio + 2;
-                
-                facturasPeriodo = invoices.filter(inv => {
-                    const invDate = new Date(inv.entryDate);
-                    const invMonth = invDate.getMonth() + 1;
-                    return invDate.getFullYear() == year && invMonth >= mesInicio && invMonth <= mesFin;
-                });
-            } else if (tipoResumen === 'anual') {
-                facturasPeriodo = invoices.filter(inv => {
-                    const invDate = new Date(inv.entryDate);
-                    return invDate.getFullYear() == year;
-                });
-            }
-            
-            // Calcular totales
-            const comprasNetas = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount / 1.19), 0);
-            const ivaCredito = facturasPeriodo.reduce((sum, inv) => sum + (inv.amount - inv.amount / 1.19), 0);
-            
-            // Mostrar resumen
-            document.getElementById('siiComprasNetas').textContent = `${Math.round(comprasNetas).toLocaleString()}`;
-            document.getElementById('siiIVACredito').textContent = `${Math.round(ivaCredito).toLocaleString()}`;
-            document.getElementById('siiTotalFacturas').textContent = facturasPeriodo.length;
-            document.getElementById('siiRetenciones').textContent = '$0'; // Por implementar
-            
-            document.getElementById('siiSummaryResult').style.display = 'block';
-            
-            logAuditEvent('sii_summary', 'Resumen tributario generado', {
-                periodo,
-                tipo: tipoResumen,
-                facturas: facturasPeriodo.length
-            });
-        }
-        
-        // Toggle sincronización automática SII
-        function toggleSIIAutoSync() {
-            const isEnabled = document.getElementById('siiAutoSync').checked;
-            
-            if (isEnabled) {
-                const frequency = parseInt(document.getElementById('siiSyncFrequency').value) || 60;
-                
-                siiAutoSyncInterval = setInterval(() => {
-                    syncWithSII();
-                }, frequency * 60 * 1000);
-                
-                // Sincronizar inmediatamente
-                syncWithSII();
-                
-                showAlert('Sincronización automática con SII activada', 'success');
-            } else {
-                if (siiAutoSyncInterval) {
-                    clearInterval(siiAutoSyncInterval);
-                    siiAutoSyncInterval = null;
-                }
-                showAlert('Sincronización automática desactivada', 'warning');
-            }
-            
-            localStorage.setItem('siiAutoSync', isEnabled);
-            logAuditEvent('sii_sync_toggle', isEnabled ? 'Sincronización activada' : 'Sincronización desactivada');
-        }
-        
-        // Sincronizar con SII
-        function syncWithSII() {
-            if (!siiConfig.rutEmpresa) {
-                console.log('Configuración SII incompleta');
-                return;
-            }
-            
-            const syncEntry = {
-                id: Date.now(),
-                timestamp: new Date().toISOString(),
-                status: 'processing',
-                documentsFound: 0,
-                documentsImported: 0
-            };
-            
-            // Simulación de sincronización
-            setTimeout(() => {
-                syncEntry.status = 'completed';
-                syncEntry.documentsFound = Math.floor(Math.random() * 10);
-                syncEntry.documentsImported = Math.floor(syncEntry.documentsFound * 0.8);
-                
-                siiSyncHistory.unshift(syncEntry);
-                if (siiSyncHistory.length > 50) {
-                    siiSyncHistory = siiSyncHistory.slice(0, 50);
-                }
-                localStorage.setItem('siiSyncHistory', JSON.stringify(siiSyncHistory));
-                
-                updateSIISyncStatus();
-                
-                if (syncEntry.documentsImported > 0) {
-                    showAlert(`SII: ${syncEntry.documentsImported} documentos sincronizados`, 'success');
-                }
-                
-                logAuditEvent('sii_sync', 'Sincronización con SII completada', syncEntry);
-            }, 3000);
-        }
-        
-        // Actualizar estado de sincronización SII
-        function updateSIISyncStatus() {
-            const container = document.getElementById('siiSyncStatus');
-            if (!container) return;
-            
-            container.innerHTML = '<h4>Historial de Sincronización</h4>';
-            
-            if (siiSyncHistory.length === 0) {
-                container.innerHTML += '<p style="text-align: center; color: #666;">No hay sincronizaciones registradas</p>';
-                return;
-            }
-            
-            siiSyncHistory.slice(0, 5).forEach(sync => {
-                const item = document.createElement('div');
-                item.className = 'backup-item';
-                item.innerHTML = `
-                    <div class="backup-info">
-                        <div class="backup-date">${formatDateTime(sync.timestamp)}</div>
-                        <div class="backup-details">
-                            Estado: ${sync.status === 'completed' ? '✅ Completado' : '⏳ Procesando'} | 
-                            Documentos encontrados: ${sync.documentsFound} | 
-                            Importados: ${sync.documentsImported}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
-        
-        // Consultar estado DTE
-        function consultarEstadoDTE() {
-            const folio = document.getElementById('siiFolio').value;
-            
-            if (!folio) {
-                showAlert('Por favor ingrese el folio del documento', 'warning');
-                return;
-            }
-            
-            showAlert('Consultando estado del DTE...', 'info');
-            
-            setTimeout(() => {
-                const estados = ['ACEPTADO', 'ACEPTADO CON REPAROS', 'RECHAZADO', 'EN PROCESO'];
-                const estado = estados[Math.floor(Math.random() * estados.length)];
-                const fecha = new Date().toISOString();
-                
-                showAlert(`Estado DTE ${folio}: ${estado}\nÚltima actualización: ${formatDateTime(fecha)}`, 
-                    estado === 'ACEPTADO' ? 'success' : estado === 'RECHAZADO' ? 'danger' : 'warning');
-                
-                logAuditEvent('sii_dte_status', 'Consulta estado DTE', { folio, estado });
-            }, 1500);
-        }
-        
-        // Descargar DTE (simulado)
-        function downloadDTE() {
-            const folio = document.getElementById('siiFolio').value;
-            const tipoDoc = document.getElementById('siiTipoDoc').value;
-            
-            if (!folio) {
-                showAlert('Por favor ingrese el folio del documento', 'warning');
-                return;
-            }
-            
-            // Simular XML del DTE
-            const dteXML = `<?xml version="1.0" encoding="ISO-8859-1"?>
-<DTE version="1.0">
-    <Documento ID="DTE-${tipoDoc}-${folio}">
-        <Encabezado>
-            <IdDoc>
-                <TipoDTE>${tipoDoc}</TipoDTE>
-                <Folio>${folio}</Folio>
-                <FchEmis>${new Date().toISOString().split('T')[0]}</FchEmis>
-            </IdDoc>
-        </Encabezado>
-    </Documento>
-</DTE>`;
-            
-            const blob = new Blob([dteXML], { type: 'text/xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `DTE_${tipoDoc}_${folio}.xml`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            showAlert('DTE descargado exitosamente', 'success');
-            logAuditEvent('sii_download', 'DTE descargado', { tipoDoc, folio });
-        }
-        
-        // Mostrar modal de validación de factura
-        function showValidateInvoiceModal() {
-            const modal = `
-                <div class="modal active" id="validateModal">
-                    <div class="modal-content">
-                        <h2>Validar Factura en SII</h2>
-                        <p>Seleccione una factura para validar en el SII</p>
-                        <select id="invoiceToValidate" style="width: 100%; padding: 10px; margin: 20px 0;">
-                            <option value="">Seleccionar factura...</option>
-                            ${invoices.filter(inv => !inv.siiValidated).map(inv => 
-                                `<option value="${inv.id}">${inv.invoiceNumber} - ${inv.supplierName} - ${inv.amount}</option>`
-                            ).join('')}
-                        </select>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-success" onclick="validateSelectedInvoice()">Validar</button>
-                            <button class="btn btn-danger" onclick="closeValidateModal()">Cancelar</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modal);
-        }
-        
-        // Validar factura seleccionada
-        function validateSelectedInvoice() {
-            const invoiceId = document.getElementById('invoiceToValidate').value;
-            if (!invoiceId) {
-                showAlert('Por favor seleccione una factura', 'warning');
-                return;
-            }
-            
-            const invoice = invoices.find(inv => inv.id == invoiceId);
-            if (invoice) {
-                invoice.siiValidated = true;
-                localStorage.setItem('invoices', JSON.stringify(invoices));
-                updateInvoiceTable();
-                showAlert('Factura validada en SII exitosamente', 'success');
-                logAuditEvent('sii_invoice_validate', 'Factura validada', { invoiceNumber: invoice.invoiceNumber });
-            }
-            
-            closeValidateModal();
-        }
-        
-        // Cerrar modal de validación
-        function closeValidateModal() {
-            const modal = document.getElementById('validateModal');
-            if (modal) modal.remove();
-        }
-        
-        // Función auxiliar para agregar días a una fecha
-        function addDays(date, days) {
-            const result = new Date(date);
-            result.setDate(result.getDate() + days);
-            return result.toISOString().split('T')[0];
-        }
-        
-        // ============= FIN FUNCIONES DE INTEGRACIÓN SII =============
-
-        // Función para editar proveedor (placeholder)
+        // Función para editar proveedor
         function editSupplier(supplierId) {
             const supplier = suppliers.find(s => s.id === supplierId);
             if (supplier) {
                 // Llenar el formulario con los datos del proveedor
                 document.getElementById('supplierName').value = supplier.name;
-                document.getElementById('supplierRuc').value = supplier.ruc;
+                document.getElementById('supplierRuc').value = supplier.rut;
                 document.getElementById('supplierEmail').value = supplier.email;
                 document.getElementById('supplierPhone').value = supplier.phone;
                 document.getElementById('supplierAddress').value = supplier.address || '';
@@ -4150,6 +3168,97 @@
                 showAlert('Edite los datos del proveedor y guarde los cambios', 'info');
             }
         }
+
+        // Inicialización del sistema
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar usuario
+            initializeUser();
+            
+            // Cargar todas las tablas
+            updateAllViews();
+            
+            // Establecer fecha actual en campos de fecha
+            const today = new Date().toISOString().split('T')[0];
+            const entryDateField = document.getElementById('entryDate');
+            if (entryDateField) entryDateField.value = today;
+            
+            // Cargar configuración de recordatorios
+            const reminderDays = localStorage.getItem('reminderDays');
+            if (reminderDays) document.getElementById('reminderDays').value = reminderDays;
+            
+            const notificationEmail = localStorage.getItem('notificationEmail');
+            if (notificationEmail) document.getElementById('notificationEmail').value = notificationEmail;
+            
+            const reminderTime = localStorage.getItem('reminderTime');
+            if (reminderTime) document.getElementById('reminderTime').value = reminderTime;
+            
+            const notificationChannel = localStorage.getItem('notificationChannel');
+            if (notificationChannel) document.getElementById('notificationChannel').value = notificationChannel;
+            
+            // Cargar configuración de respaldo
+            const backupFrequency = localStorage.getItem('backupFrequency');
+            if (backupFrequency) document.getElementById('backupFrequency').value = backupFrequency;
+            
+            const backupRetention = localStorage.getItem('backupRetention');
+            if (backupRetention) document.getElementById('backupRetention').value = backupRetention;
+            
+            const encryptionLevel = localStorage.getItem('encryptionLevel');
+            if (encryptionLevel) document.getElementById('encryptionLevel').value = encryptionLevel;
+            
+            // Cargar configuración de importación BSale
+            const bsaleDateFormat = localStorage.getItem('bsaleDateFormat');
+            if (bsaleDateFormat) document.getElementById('bsaleDateFormat').value = bsaleDateFormat;
+            
+            const defaultCurrency = localStorage.getItem('defaultCurrency');
+            if (defaultCurrency) document.getElementById('defaultCurrency').value = defaultCurrency;
+            
+            const duplicateHandling = localStorage.getItem('duplicateHandling');
+            if (duplicateHandling) document.getElementById('duplicateHandling').value = duplicateHandling;
+            
+            const includeIVA = localStorage.getItem('includeIVA');
+            if (includeIVA) document.getElementById('includeIVA').value = includeIVA;
+            
+            const bsaleApiToken = localStorage.getItem('bsaleApiToken');
+            if (bsaleApiToken) document.getElementById('bsaleApiToken').value = bsaleApiToken;
+            
+            // Actualizar historial de importaciones
+            updateImportHistory();
+            
+            // Iniciar respaldo automático
+            startAutoBackup();
+            
+            // Actualizar estado de respaldo cada minuto
+            setInterval(updateBackupStatus, 60000);
+            
+            // Verificar recordatorios cada minuto
+            setInterval(checkForReminders, 60000);
+            
+            // Limpiar respaldos antiguos diariamente
+            setInterval(cleanOldBackups, 24 * 60 * 60 * 1000);
+            cleanOldBackups(); // Ejecutar limpieza inicial
+            
+            // Registrar inicio de sesión
+            logAuditEvent('login', `Usuario ${currentUser.name} inició sesión`, {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform
+            });
+            
+            // Mensaje de bienvenida
+            console.log(`%c Sistema Empresarial de Pagos v${SYSTEM_CONFIG.version}`, 'color: #6366f1; font-size: 20px; font-weight: bold;');
+            console.log('%c Respaldo automático activo', 'color: #10b981; font-size: 14px;');
+            console.log('%c Integración BSale habilitada', 'color: #8b5cf6; font-size: 14px;');
+            console.log('%c Todos los cambios son registrados para auditoría', 'color: #f59e0b; font-size: 12px;');
+        });
+
+        // Manejar cierre de página
+        window.addEventListener('beforeunload', function(e) {
+            // Crear respaldo automático antes de cerrar
+            autoBackup();
+            
+            // Registrar cierre de sesión
+            logAuditEvent('logout', `Usuario ${currentUser.name} cerró sesión`);
+        });
     </script>
 </body>
 </html>
+
