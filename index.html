@@ -775,8 +775,8 @@
                         <input type="text" id="supplierName" required placeholder="Nombre completo">
                     </div>
                     <div class="form-group">
-                        <label>RUT *</label>
-                        <input type="text" id="supplierRuc" required placeholder="12.345.678-9">
+                        <label>RUC/DNI *</label>
+                        <input type="text" id="supplierRuc" required placeholder="12345678901">
                     </div>
                     <div class="form-group">
                         <label>Email *</label>
@@ -784,7 +784,7 @@
                     </div>
                     <div class="form-group">
                         <label>Teléfono *</label>
-                        <input type="tel" id="supplierPhone" required placeholder="+56 9 9999 9999">
+                        <input type="tel" id="supplierPhone" required placeholder="+51 999 999 999">
                     </div>
                     <div class="form-group">
                         <label>Dirección</label>
@@ -825,7 +825,7 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>RUT</th>
+                                <th>RUC/DNI</th>
                                 <th>Email</th>
                                 <th>Teléfono</th>
                                 <th>Categoría</th>
@@ -931,12 +931,19 @@
                             <h3>🔄 Sincronización API</h3>
                             <p>Conecta directamente con la API de BSale</p>
                             <input type="text" id="bsaleApiToken" placeholder="Token API de BSale" style="width: 100%; margin-bottom: 12px;">
-                            <button class="btn btn-secondary" onclick="setupBSaleAPI()">
+                            <button class="btn btn-secondary" id="setupApiBtn" onclick="setupBSaleAPI()">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path>
                                     <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path>
                                 </svg>
                                 Configurar API
+                            </button>
+                             <button class="btn btn-primary" onclick="syncFromBSale()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21.5 2v6h-6M2.5 22v-6h6"></path>
+                                    <path d="M2 11.5a10 10 0 0118.84-4.5M22 12.5a10 10 0 01-18.84 4.5"></path>
+                                </svg>
+                                Sincronizar
                             </button>
                         </div>
                     </div>
@@ -1320,9 +1327,9 @@
                 'name': 'name',
                 'nombre': 'name',
                 'company': 'name',
-                'code': 'rut',
-                'rut': 'rut',
-                'dni': 'rut',
+                'code': 'ruc',
+                'rut': 'ruc',
+                'dni': 'ruc',
                 'email': 'email',
                 'correo': 'email',
                 'phone': 'phone',
@@ -1710,7 +1717,7 @@
                         </div>
                     </div>
                     <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" 
-                            onclick="downloadBackup('${backup.id}')">
+                                onclick="downloadBackup('${backup.id}')">
                         Descargar
                     </button>
                 `;
@@ -1823,7 +1830,7 @@
             const supplier = {
                 id: Date.now(),
                 name: document.getElementById('supplierName').value,
-                rut: document.getElementById('supplierRuc').value,
+                ruc: document.getElementById('supplierRuc').value,
                 email: document.getElementById('supplierEmail').value,
                 phone: document.getElementById('supplierPhone').value,
                 address: document.getElementById('supplierAddress').value,
@@ -1834,7 +1841,7 @@
                 createdAt: new Date().toISOString()
             };
             
-            if (!supplier.name || !supplier.rut || !supplier.email) {
+            if (!supplier.name || !supplier.ruc || !supplier.email) {
                 showAlert('Por favor complete los campos obligatorios', 'warning');
                 return;
             }
@@ -1900,7 +1907,7 @@
                 const row = tbody.insertRow();
                 row.innerHTML = `
                     <td>${supplier.name}</td>
-                    <td>${supplier.rut}</td>
+                    <td>${supplier.ruc}</td>
                     <td>${supplier.email}</td>
                     <td>${supplier.phone}</td>
                     <td>${supplier.category || 'N/A'}</td>
@@ -2131,7 +2138,7 @@
             // Monto
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text(`MONTO TOTAL: ${invoice.amount.toFixed(2)}`, 20, 160);
+            doc.text(`MONTO TOTAL: $${invoice.amount.toFixed(2)}`, 20, 160);
             
             // Estado
             doc.text(`ESTADO: ${invoice.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}`, 20, 170);
@@ -2148,7 +2155,7 @@
             // Footer
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
-            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v3.0', 105, 280, { align: 'center' });
+            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
             doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
             
             // Descargar
@@ -2186,7 +2193,7 @@
             doc.setFont(undefined, 'normal');
             doc.text(`Factura: ${payment.invoiceNumber}`, 20, 95);
             doc.text(`Proveedor: ${payment.supplierName}`, 20, 105);
-            doc.text(`Monto: ${payment.amount.toFixed(2)}`, 20, 115);
+            doc.text(`Monto: $${payment.amount.toFixed(2)}`, 20, 115);
             doc.text(`Método: ${capitalizeFirst(payment.paymentMethod)}`, 20, 125);
             doc.text(`Procesado por: ${payment.processedBy}`, 20, 135);
             
@@ -2201,7 +2208,7 @@
             // Footer
             doc.setFontSize(10);
             doc.text('Comprobante válido como constancia de pago', 105, 270, { align: 'center' });
-            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v3.0', 105, 280, { align: 'center' });
+            doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
             doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
             
             // Descargar
@@ -2236,7 +2243,7 @@
             // Hoja de Proveedores
             const supplierData = suppliers.map(sup => ({
                 'Nombre': sup.name,
-                'RUT': sup.rut,
+                'RUC/DNI': sup.ruc,
                 'Email': sup.email,
                 'Teléfono': sup.phone,
                 'Dirección': sup.address,
@@ -2347,7 +2354,7 @@
             
             const totalPending = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
             
-            document.getElementById('totalPending').textContent = `${totalPending.toFixed(2)}`;
+            document.getElementById('totalPending').textContent = `$${totalPending.toFixed(2)}`;
             document.getElementById('overdueCount').textContent = overdueInvoices.length;
             document.getElementById('upcomingCount').textContent = upcomingInvoices.length;
             document.getElementById('supplierCount').textContent = suppliers.length;
@@ -2397,7 +2404,7 @@
                             </svg>
                             <div>
                                 <strong>${invoice.invoiceNumber}</strong> - ${invoice.supplierName}<br>
-                                Vence: ${formatDate(invoice.dueDate)} - Monto: ${invoice.amount.toFixed(2)}<br>
+                                Vence: ${formatDate(invoice.dueDate)} - Monto: $${invoice.amount.toFixed(2)}<br>
                                 Centro de Costo: ${invoice.costCenter || 'N/A'} | Proyecto: ${invoice.project || 'N/A'}
                             </div>
                         `;
@@ -2465,9 +2472,9 @@
             alertDiv.innerHTML = `
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     ${type === 'success' ? '<polyline points="20 6 9 17 4 12"></polyline>' : 
-                      type === 'warning' ? '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' :
-                      type === 'danger' ? '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>' :
-                      '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>'}
+                    type === 'warning' ? '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>' :
+                    type === 'danger' ? '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>' :
+                    '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>'}
                 </svg>
                 ${message}
             `;
@@ -2553,7 +2560,97 @@
             localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
         }
 
-        // ============= FUNCIONES DE IMPORTACIÓN BSALE =============
+        // Inicialización del sistema
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar usuario
+            initializeUser();
+            
+            // Cargar todas las tablas
+            updateAllViews();
+            
+            // Establecer fecha actual en campos de fecha
+            const today = new Date().toISOString().split('T')[0];
+            const entryDateField = document.getElementById('entryDate');
+            if (entryDateField) entryDateField.value = today;
+            
+            // Cargar configuración de recordatorios
+            const reminderDays = localStorage.getItem('reminderDays');
+            if (reminderDays) document.getElementById('reminderDays').value = reminderDays;
+            
+            const notificationEmail = localStorage.getItem('notificationEmail');
+            if (notificationEmail) document.getElementById('notificationEmail').value = notificationEmail;
+            
+            const reminderTime = localStorage.getItem('reminderTime');
+            if (reminderTime) document.getElementById('reminderTime').value = reminderTime;
+            
+            const notificationChannel = localStorage.getItem('notificationChannel');
+            if (notificationChannel) document.getElementById('notificationChannel').value = notificationChannel;
+            
+            // Cargar configuración de respaldo
+            const backupFrequency = localStorage.getItem('backupFrequency');
+            if (backupFrequency) document.getElementById('backupFrequency').value = backupFrequency;
+            
+            const backupRetention = localStorage.getItem('backupRetention');
+            if (backupRetention) document.getElementById('backupRetention').value = backupRetention;
+            
+            const encryptionLevel = localStorage.getItem('encryptionLevel');
+            if (encryptionLevel) document.getElementById('encryptionLevel').value = encryptionLevel;
+            
+            // Cargar configuración de importación BSale
+            const bsaleDateFormat = localStorage.getItem('bsaleDateFormat');
+            if (bsaleDateFormat) document.getElementById('bsaleDateFormat').value = bsaleDateFormat;
+            
+            const defaultCurrency = localStorage.getItem('defaultCurrency');
+            if (defaultCurrency) document.getElementById('defaultCurrency').value = defaultCurrency;
+            
+            const duplicateHandling = localStorage.getItem('duplicateHandling');
+            if (duplicateHandling) document.getElementById('duplicateHandling').value = duplicateHandling;
+            
+            const includeIVA = localStorage.getItem('includeIVA');
+            if (includeIVA) document.getElementById('includeIVA').value = includeIVA;
+            
+            const bsaleApiToken = localStorage.getItem('bsaleApiToken');
+            if (bsaleApiToken) document.getElementById('bsaleApiToken').value = bsaleApiToken;
+            
+            // Actualizar historial de importaciones
+            updateImportHistory();
+            
+            // Iniciar respaldo automático
+            startAutoBackup();
+            
+            // Actualizar estado de respaldo cada minuto
+            setInterval(updateBackupStatus, 60000);
+            
+            // Verificar recordatorios cada minuto
+            setInterval(checkForReminders, 60000);
+            
+            // Limpiar respaldos antiguos diariamente
+            setInterval(cleanOldBackups, 24 * 60 * 60 * 1000);
+            cleanOldBackups(); // Ejecutar limpieza inicial
+            
+            // Registrar inicio de sesión
+            logAuditEvent('login', `Usuario ${currentUser.name} inició sesión`, {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform
+            });
+            
+            // Mensaje de bienvenida
+            console.log(`%c Sistema Empresarial de Pagos v${SYSTEM_CONFIG.version}`, 'color: #6366f1; font-size: 20px; font-weight: bold;');
+            console.log('%c Respaldo automático activo', 'color: #10b981; font-size: 14px;');
+            console.log('%c Integración BSale habilitada', 'color: #8b5cf6; font-size: 14px;');
+            console.log('%c Todos los cambios son registrados para auditoría', 'color: #f59e0b; font-size: 12px;');
+        });
+
+        // Manejar cierre de página
+        window.addEventListener('beforeunload', function(e) {
+            // Crear respaldo automático antes de cerrar
+            autoBackup();
+            
+            // Registrar cierre de sesión
+            logAuditEvent('logout', `Usuario ${currentUser.name} cerró sesión`);
+        });
+
+        // ============= FUNCIONES DE IMPORTACIÓN BSale =============
         
         // Manejar archivo de importación
         async function handleImportFile(event, type) {
@@ -2808,12 +2905,12 @@
                 methodLower.includes('deposit') || methodLower.includes('depós')) {
                 return 'transferencia';
             } else if (methodLower.includes('efectivo') || methodLower.includes('cash') || 
-                       methodLower.includes('contado')) {
+                         methodLower.includes('contado')) {
                 return 'efectivo';
             } else if (methodLower.includes('cheque') || methodLower.includes('check')) {
                 return 'cheque';
             } else if (methodLower.includes('tarjeta') || methodLower.includes('card') || 
-                       methodLower.includes('crédito') || methodLower.includes('débito')) {
+                         methodLower.includes('crédito') || methodLower.includes('débito')) {
                 return 'tarjeta';
             } else {
                 return 'otro';
@@ -2825,7 +2922,7 @@
             if (type === 'invoices') {
                 return item.invoiceNumber && item.amount;
             } else if (type === 'suppliers') {
-                return item.name && (item.rut || item.email);
+                return item.name && (item.ruc || item.email);
             } else if (type === 'payments') {
                 return item.invoiceNumber && item.amount;
             }
@@ -2866,7 +2963,7 @@
             if (type === 'invoices') {
                 headers = ['Factura', 'Proveedor', 'Monto', 'Fecha', 'Vencimiento', 'Estado'];
             } else if (type === 'suppliers') {
-                headers = ['Nombre', 'RUT', 'Email', 'Teléfono', 'Categoría'];
+                headers = ['Nombre', 'RUC/DNI', 'Email', 'Teléfono', 'Categoría'];
             } else if (type === 'payments') {
                 headers = ['Factura', 'Proveedor', 'Monto', 'Fecha Pago', 'Método'];
             }
@@ -2895,7 +2992,7 @@
                 } else if (type === 'suppliers') {
                     row.innerHTML = `
                         <td>${item.name || 'N/A'}</td>
-                        <td>${item.rut || 'N/A'}</td>
+                        <td>${item.ruc || 'N/A'}</td>
                         <td>${item.email || 'N/A'}</td>
                         <td>${item.phone || 'N/A'}</td>
                         <td>${item.category || 'N/A'}</td>
@@ -2944,7 +3041,7 @@
             if (type === 'invoices') {
                 return invoices.some(inv => inv.invoiceNumber === item.invoiceNumber);
             } else if (type === 'suppliers') {
-                return suppliers.some(sup => sup.rut === item.rut || sup.email === item.email);
+                return suppliers.some(sup => sup.ruc === item.ruc || sup.email === item.email);
             } else if (type === 'payments') {
                 return payments.some(pay => 
                     pay.invoiceNumber === item.invoiceNumber && 
@@ -2955,8 +3052,8 @@
         }
 
         // Confirmar importación
-        function confirmImport() {
-            if (!pendingImportData || !pendingImportType) return;
+        function confirmImport(dataToImport = pendingImportData, typeToImport = pendingImportType) {
+            if (!dataToImport || !typeToImport) return;
             
             const duplicateHandling = localStorage.getItem('duplicateHandling') || 'skip';
             let imported = 0;
@@ -2966,8 +3063,8 @@
             // Crear respaldo antes de importar
             autoBackup();
             
-            pendingImportData.forEach(item => {
-                const isDup = isDuplicate(item, pendingImportType);
+            dataToImport.forEach(item => {
+                const isDup = isDuplicate(item, typeToImport);
                 
                 if (isDup) {
                     if (duplicateHandling === 'skip') {
@@ -2975,7 +3072,7 @@
                         return;
                     } else if (duplicateHandling === 'update') {
                         // Actualizar existente
-                        updateExistingRecord(item, pendingImportType);
+                        updateExistingRecord(item, typeToImport);
                         updated++;
                         return;
                     } else if (duplicateHandling === 'ask') {
@@ -2987,13 +3084,13 @@
                 }
                 
                 // Importar nuevo registro
-                if (pendingImportType === 'invoices') {
+                if (typeToImport === 'invoices') {
                     invoices.push(item);
                     imported++;
-                } else if (pendingImportType === 'suppliers') {
+                } else if (typeToImport === 'suppliers') {
                     suppliers.push(item);
                     imported++;
-                } else if (pendingImportType === 'payments') {
+                } else if (typeToImport === 'payments') {
                     // Actualizar factura como pagada si existe
                     const invoice = invoices.find(inv => inv.invoiceNumber === item.invoiceNumber);
                     if (invoice) {
@@ -3014,10 +3111,10 @@
             const importRecord = {
                 id: Date.now(),
                 timestamp: new Date().toISOString(),
-                type: pendingImportType,
+                type: typeToImport,
                 user: currentUser.name,
                 stats: {
-                    total: pendingImportData.length,
+                    total: dataToImport.length,
                     imported: imported,
                     updated: updated,
                     skipped: skipped
@@ -3029,7 +3126,7 @@
             
             // Registrar en auditoría
             logAuditEvent('import', `Importación desde BSale completada`, {
-                type: pendingImportType,
+                type: typeToImport,
                 imported,
                 updated,
                 skipped
@@ -3054,7 +3151,7 @@
                     invoices[index] = { ...invoices[index], ...item };
                 }
             } else if (type === 'suppliers') {
-                const index = suppliers.findIndex(sup => sup.rut === item.rut || sup.email === item.email);
+                const index = suppliers.findIndex(sup => sup.ruc === item.ruc || sup.email === item.email);
                 if (index !== -1) {
                     suppliers[index] = { ...suppliers[index], ...item };
                 }
@@ -3079,9 +3176,14 @@
         // Configurar API de BSale
         function setupBSaleAPI() {
             const apiToken = document.getElementById('bsaleApiToken').value;
-            
+            const setupApiBtn = document.getElementById('setupApiBtn');
+
             if (!apiToken) {
                 showAlert('Por favor ingrese el token de API de BSale', 'warning');
+                setupApiBtn.style.background = 'var(--danger)';
+                setTimeout(() => {
+                    setupApiBtn.style.background = 'var(--gray)';
+                }, 2000);
                 return;
             }
             
@@ -3089,15 +3191,65 @@
             
             showAlert('API de BSale configurada. Puede realizar importaciones automáticas.', 'success');
             logAuditEvent('api_setup', 'API de BSale configurada');
+
+            // Feedback visual de éxito
+            setupApiBtn.style.background = 'var(--success)';
+            setTimeout(() => {
+                setupApiBtn.style.background = 'var(--gray)';
+            }, 2000);
+        }
+
+        // Sincronizar desde BSale
+        async function syncFromBSale() {
+            const apiToken = localStorage.getItem('bsaleApiToken');
+            if (!apiToken) {
+                showAlert('Por favor, configure el token de API de BSale primero', 'warning');
+                return;
+            }
             
-            // Aquí podrías implementar llamadas reales a la API de BSale
-            // Por seguridad, esto requeriría un backend proxy
+            const startDate = prompt('Sincronizar facturas desde la fecha (YYYY-MM-DD):');
+            if (!startDate) return;
+
+            showAlert('Sincronizando con BSale...', 'info');
+            // Simular un retraso para que se vea la notificación de "Sincronizando..."
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            try {
+                // Simulación de llamada a la API de BSale
+                const response = await fetch(`https://api.bsale.cl/v1/documents.json?limit=200&offset=0&document_type_id=1&state=0&since_date=${startDate}`, {
+                    method: 'GET',
+                    headers: {
+                        'Access-Token': apiToken
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error de la API: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.items && data.items.length > 0) {
+                    const processedData = processImportData(data.items, 'invoices');
+                    confirmImport(processedData, 'invoices');
+                    showAlert('Sincronización con BSale exitosa. Facturas importadas.', 'success');
+                    logAuditEvent('bsale_sync', 'Sincronización de facturas DTE con BSale exitosa', { count: processedData.length });
+                } else {
+                    showAlert('Sincronización completada. No se encontraron nuevas facturas pendientes.', 'info');
+                    logAuditEvent('bsale_sync', 'Sincronización de facturas DTE con BSale sin nuevos registros');
+                }
+
+            } catch (error) {
+                console.error('Error de sincronización:', error);
+                showAlert(`Error de conexión al sincronizar con BSale. Verifique que el token de API sea correcto y que su conexión a internet sea estable.`, 'danger');
+                logAuditEvent('bsale_sync_error', 'Error en sincronización con BSale', { error: error.message });
+            }
         }
 
         // Guardar configuración de importación
         function saveImportSettings() {
             const settings = {
-                bsaleDateFormat: document.getElementById('bsaleDateFormat').value,
+                dateFormat: document.getElementById('bsaleDateFormat').value,
                 defaultCurrency: document.getElementById('defaultCurrency').value,
                 duplicateHandling: document.getElementById('duplicateHandling').value,
                 includeIVA: document.getElementById('includeIVA').value
@@ -3143,15 +3295,15 @@
             });
         }
 
-        // ============= FIN FUNCIONES DE IMPORTACIÓN BSALE =============
+        // ============= FIN FUNCIONES DE IMPORTACIÓN BSale =============
 
-        // Función para editar proveedor
+        // Función para editar proveedor (placeholder)
         function editSupplier(supplierId) {
             const supplier = suppliers.find(s => s.id === supplierId);
             if (supplier) {
                 // Llenar el formulario con los datos del proveedor
                 document.getElementById('supplierName').value = supplier.name;
-                document.getElementById('supplierRuc').value = supplier.rut;
+                document.getElementById('supplierRuc').value = supplier.ruc;
                 document.getElementById('supplierEmail').value = supplier.email;
                 document.getElementById('supplierPhone').value = supplier.phone;
                 document.getElementById('supplierAddress').value = supplier.address || '';
@@ -3168,97 +3320,8 @@
                 showAlert('Edite los datos del proveedor y guarde los cambios', 'info');
             }
         }
-
-        // Inicialización del sistema
-        document.addEventListener('DOMContentLoaded', function() {
-            // Inicializar usuario
-            initializeUser();
-            
-            // Cargar todas las tablas
-            updateAllViews();
-            
-            // Establecer fecha actual en campos de fecha
-            const today = new Date().toISOString().split('T')[0];
-            const entryDateField = document.getElementById('entryDate');
-            if (entryDateField) entryDateField.value = today;
-            
-            // Cargar configuración de recordatorios
-            const reminderDays = localStorage.getItem('reminderDays');
-            if (reminderDays) document.getElementById('reminderDays').value = reminderDays;
-            
-            const notificationEmail = localStorage.getItem('notificationEmail');
-            if (notificationEmail) document.getElementById('notificationEmail').value = notificationEmail;
-            
-            const reminderTime = localStorage.getItem('reminderTime');
-            if (reminderTime) document.getElementById('reminderTime').value = reminderTime;
-            
-            const notificationChannel = localStorage.getItem('notificationChannel');
-            if (notificationChannel) document.getElementById('notificationChannel').value = notificationChannel;
-            
-            // Cargar configuración de respaldo
-            const backupFrequency = localStorage.getItem('backupFrequency');
-            if (backupFrequency) document.getElementById('backupFrequency').value = backupFrequency;
-            
-            const backupRetention = localStorage.getItem('backupRetention');
-            if (backupRetention) document.getElementById('backupRetention').value = backupRetention;
-            
-            const encryptionLevel = localStorage.getItem('encryptionLevel');
-            if (encryptionLevel) document.getElementById('encryptionLevel').value = encryptionLevel;
-            
-            // Cargar configuración de importación BSale
-            const bsaleDateFormat = localStorage.getItem('bsaleDateFormat');
-            if (bsaleDateFormat) document.getElementById('bsaleDateFormat').value = bsaleDateFormat;
-            
-            const defaultCurrency = localStorage.getItem('defaultCurrency');
-            if (defaultCurrency) document.getElementById('defaultCurrency').value = defaultCurrency;
-            
-            const duplicateHandling = localStorage.getItem('duplicateHandling');
-            if (duplicateHandling) document.getElementById('duplicateHandling').value = duplicateHandling;
-            
-            const includeIVA = localStorage.getItem('includeIVA');
-            if (includeIVA) document.getElementById('includeIVA').value = includeIVA;
-            
-            const bsaleApiToken = localStorage.getItem('bsaleApiToken');
-            if (bsaleApiToken) document.getElementById('bsaleApiToken').value = bsaleApiToken;
-            
-            // Actualizar historial de importaciones
-            updateImportHistory();
-            
-            // Iniciar respaldo automático
-            startAutoBackup();
-            
-            // Actualizar estado de respaldo cada minuto
-            setInterval(updateBackupStatus, 60000);
-            
-            // Verificar recordatorios cada minuto
-            setInterval(checkForReminders, 60000);
-            
-            // Limpiar respaldos antiguos diariamente
-            setInterval(cleanOldBackups, 24 * 60 * 60 * 1000);
-            cleanOldBackups(); // Ejecutar limpieza inicial
-            
-            // Registrar inicio de sesión
-            logAuditEvent('login', `Usuario ${currentUser.name} inició sesión`, {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform
-            });
-            
-            // Mensaje de bienvenida
-            console.log(`%c Sistema Empresarial de Pagos v${SYSTEM_CONFIG.version}`, 'color: #6366f1; font-size: 20px; font-weight: bold;');
-            console.log('%c Respaldo automático activo', 'color: #10b981; font-size: 14px;');
-            console.log('%c Integración BSale habilitada', 'color: #8b5cf6; font-size: 14px;');
-            console.log('%c Todos los cambios son registrados para auditoría', 'color: #f59e0b; font-size: 12px;');
-        });
-
-        // Manejar cierre de página
-        window.addEventListener('beforeunload', function(e) {
-            // Crear respaldo automático antes de cerrar
-            autoBackup();
-            
-            // Registrar cierre de sesión
-            logAuditEvent('logout', `Usuario ${currentUser.name} cerró sesión`);
-        });
     </script>
 </body>
 </html>
+
 
