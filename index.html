@@ -2651,6 +2651,68 @@
         });
 
         // ============= FUNCIONES DE IMPORTACIÓN BSale =============
+
+        // ============= SINCRONIZACIÓN DIRECTA CON VERCEL =============
+
+// CAMBIA ESTO POR TU URL DE VERCEL
+const VERCEL_API = 'https://bsale-api-kappa.vercel.app/'; // <-- TU URL REAL
+
+// Agregar botón de sincronización directa
+function initDirectSync() {
+    const importTab = document.getElementById('import');
+    if (!importTab) return;
+    
+    // Crear botón
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-success';
+    btn.style.marginTop = '20px';
+    btn.innerHTML = '🔄 Sincronizar con BSale (Directo)';
+    btn.onclick = async function() {
+        try {
+            showAlert('Sincronizando...', 'info');
+            
+            const response = await fetch(`${VERCEL_API}/api/sync?type=documents`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Procesar facturas
+                data.data.forEach(doc => {
+                    const invoice = {
+                        id: Date.now() + Math.random(),
+                        invoiceNumber: doc.number || 'SIN-NUMERO',
+                        supplierName: doc.client?.name || 'Sin proveedor',
+                        amount: doc.totalAmount || 0,
+                        entryDate: new Date().toISOString().split('T')[0],
+                        dueDate: new Date().toISOString().split('T')[0],
+                        status: 'pending',
+                        paymentMethod: 'transferencia'
+                    };
+                    
+                    if (!invoices.find(i => i.invoiceNumber === invoice.invoiceNumber)) {
+                        invoices.push(invoice);
+                    }
+                });
+                
+                localStorage.setItem('invoices', JSON.stringify(invoices));
+                updateInvoiceTable();
+                showAlert('✅ Sincronización completa', 'success');
+            }
+        } catch (error) {
+            showAlert('Error: ' + error.message, 'danger');
+        }
+    };
+    
+    // Agregar después del título
+    const title = importTab.querySelector('h2');
+    if (title) {
+        title.after(btn);
+    }
+}
+
+// Ejecutar cuando cargue
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initDirectSync, 1000);
+});
         
         // Manejar archivo de importación
         async function handleImportFile(event, type) {
@@ -3323,5 +3385,6 @@
     </script>
 </body>
 </html>
+
 
 
