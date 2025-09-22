@@ -2893,23 +2893,29 @@
             });
         }
 
-        // Leer archivo CSV
+        // Leer archivo CSV con detección de delimitador
         function readCSVFile(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     try {
                         const text = e.target.result;
-                        const lines = text.split('\n');
-                        const headers = lines[0].split(',').map(h => h.trim());
+                        const lines = text.split(/[\r\n]+/).filter(line => line.trim() !== '');
+                        if (lines.length === 0) {
+                            return resolve([]);
+                        }
+
+                        // Detectar delimitador (coma o punto y coma)
+                        const delimiter = lines[0].includes(';') ? ';' : ',';
+                        
+                        const headers = lines[0].split(delimiter).map(h => h.trim().replace(/"/g, ''));
                         const data = [];
                         
                         for (let i = 1; i < lines.length; i++) {
-                            if (lines[i].trim() === '') continue;
-                            const values = lines[i].split(',');
+                            const values = lines[i].split(delimiter);
                             const row = {};
                             headers.forEach((header, index) => {
-                                row[header] = values[index] ? values[index].trim() : '';
+                                row[header] = values[index] ? values[index].trim().replace(/"/g, '') : '';
                             });
                             data.push(row);
                         }
@@ -2936,61 +2942,37 @@
             rawData.forEach(item => {
                 const processedItem = {};
                 
-                Object.keys(mapping).forEach(bsaleField => {
-                    const ourField = mapping[bsaleField];
-                    let value = getNestedProperty(item, bsaleField);
-                    
-                    if (ourField === 'status' && value) {
-                        if (value === 0 || value === 'pending' || value === 'pendiente') {
-                            value = 'pending';
-                        } else if (value === 1 || value === 'paid' || value === 'pagado') {
-                            value = 'paid';
+                Object.keys(item).forEach(originalHeader => {
+                    const cleanHeader = originalHeader.trim();
+                    const ourField = mapping[cleanHeader];
+                    if(ourField) {
+                        let value = item[originalHeader];
+                        // Procesar valores especiales
+                        if (ourField === 'status' && value) {
+                            value = (String(value).toLowerCase() === 'pagado' || value === 1) ? 'paid' : 'pending';
                         }
-                    }
-                    
-                    if ((ourField === 'entryDate' || ourField === 'dueDate' || ourField === 'paymentDate') && value) {
-                        value = formatBSaleDate(value);
-                    }
-                    
-                    if (ourField === 'amount' && value) {
-                        value = parseFloat(value) || 0;
-                        const includeIVA = localStorage.getItem('includeIVA') || 'yes';
-                        if (includeIVA === 'no' && item.tax) {
-                            value += parseFloat(item.tax) || 0;
+                        if ((ourField === 'entryDate' || ourField === 'dueDate' || ourField === 'paymentDate') && value) {
+                            value = formatBSaleDate(value);
                         }
-                    }
-                    
-                    if (ourField === 'paymentMethod' && value) {
-                        value = normalizePaymentMethod(value);
-                    }
-                    
-                    if (value !== undefined && value !== null && value !== '') {
+                        if (ourField === 'amount' && value) {
+                            value = parseFloat(String(value).replace(/[^0-9.-]+/g,"")) || 0;
+                        }
+                        if (ourField === 'paymentMethod' && value) {
+                            value = normalizePaymentMethod(value);
+                        }
                         processedItem[ourField] = value;
                     }
                 });
                 
+                // Agregar campos adicionales
                 if (type === 'invoices') {
                     processedItem.id = Date.now() + Math.random();
                     processedItem.createdBy = currentUser.name;
                     processedItem.createdAt = new Date().toISOString();
                     processedItem.status = processedItem.status || 'pending';
-                    
-                    if (processedItem.supplierName && !processedItem.supplierId) {
-                        const supplier = suppliers.find(s => 
-                            s.name.toLowerCase() === processedItem.supplierName.toLowerCase()
-                        );
-                        if (supplier) {
-                            processedItem.supplierId = supplier.id;
-                        }
+                    if (processedItem.supplierName && !suppliers.some(s => s.name.toLowerCase() === processedItem.supplierName.toLowerCase())) {
+                       // Opcional: auto-crear proveedor si no existe
                     }
-                } else if (type === 'suppliers') {
-                    processedItem.id = Date.now() + Math.random();
-                    processedItem.createdBy = currentUser.name;
-                    processedItem.createdAt = new Date().toISOString();
-                } else if (type === 'payments') {
-                    processedItem.id = Date.now() + Math.random();
-                    processedItem.processedBy = currentUser.name;
-                    processedItem.processedAt = new Date().toISOString();
                 }
                 
                 if (hasMinimumData(processedItem, type)) {
@@ -3003,76 +2985,51 @@
 
         // Obtener propiedad anidada
         function getNestedProperty(obj, path) {
-            const parts = path.split('.');
-            let current = obj;
-            
-            for (const part of parts) {
-                if (current && typeof current === 'object' && part in current) {
-                    current = current[part];
-                } else {
-                    return undefined;
+            // Esta función ahora busca sin ser sensible a mayúsculas/minúsculas
+            const lowerPath = path.toLowerCase();
+            for (const key in obj) {
+                if (key.toLowerCase() === lowerPath) {
+                    return obj[key];
                 }
             }
-            
-            return current;
+            return undefined;
         }
 
         // Formatear fecha de BSale
         function formatBSaleDate(dateValue) {
-            const dateFormat = localStorage.getItem('bsaleDateFormat') || 'YYYY-MM-DD';
-            
-            if (dateFormat === 'timestamp') {
-                const date = new Date(parseInt(dateValue) * 1000);
-                return date.toISOString().split('T')[0];
-            } else if (typeof dateValue === 'string') {
-                if (dateFormat === 'DD/MM/YYYY') {
-                    const parts = dateValue.split('/');
-                    if (parts.length === 3) {
-                        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                    }
-                } else if (dateFormat === 'MM/DD/YYYY') {
-                    const parts = dateValue.split('/');
-                    if (parts.length === 3) {
-                        return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-                    }
-                }
-                const date = new Date(dateValue);
-                if (!isNaN(date)) {
-                    return date.toISOString().split('T')[0];
-                }
+            if (!dateValue) return null;
+            // Si es un número (formato Excel), conviértelo
+            if (typeof dateValue === 'number') {
+                const excelEpoch = new Date(1899, 11, 30);
+                const jsDate = new Date(excelEpoch.getTime() + dateValue * 86400000);
+                return jsDate.toISOString().split('T')[0];
             }
-            
-            return dateValue;
+            const date = new Date(dateValue);
+            if (!isNaN(date)) {
+                return date.toISOString().split('T')[0];
+            }
+            return null;
         }
 
         // Normalizar método de pago
         function normalizePaymentMethod(method) {
             const methodLower = method.toString().toLowerCase();
             
-            if (methodLower.includes('transfer') || methodLower.includes('transf') || 
-                methodLower.includes('deposit') || methodLower.includes('depós')) {
-                return 'transferencia';
-            } else if (methodLower.includes('efectivo') || methodLower.includes('cash') || 
-                       methodLower.includes('contado')) {
-                return 'efectivo';
-            } else if (methodLower.includes('cheque') || methodLower.includes('check')) {
-                return 'cheque';
-            } else if (methodLower.includes('tarjeta') || methodLower.includes('card') || 
-                       methodLower.includes('crédito') || methodLower.includes('débito')) {
-                return 'tarjeta';
-            } else {
-                return 'otro';
-            }
+            if (methodLower.includes('transfer')) return 'transferencia';
+            if (methodLower.includes('efectivo')) return 'efectivo';
+            if (methodLower.includes('cheque')) return 'cheque';
+            if (methodLower.includes('tarjeta')) return 'tarjeta';
+            return 'otro';
         }
 
         // Verificar datos mínimos
         function hasMinimumData(item, type) {
             if (type === 'invoices') {
-                return item.invoiceNumber && item.amount;
+                return item.invoiceNumber && item.amount !== undefined;
             } else if (type === 'suppliers') {
                 return item.name && (item.ruc || item.email);
             } else if (type === 'payments') {
-                return item.invoiceNumber && item.amount;
+                return item.invoiceNumber && item.amount !== undefined;
             }
             return false;
         }
@@ -3098,7 +3055,7 @@
             
             if (data.length === 0) {
                 preview.style.display = 'none';
-                showAlert('No se encontraron datos para importar', 'warning');
+                showAlert('No se encontraron datos válidos para importar en el archivo.', 'warning');
                 return;
             }
             
