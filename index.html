@@ -295,6 +295,12 @@
             border-top: 1px solid #e2e8f0;
             font-size: 15px;
         }
+        
+        td a {
+            color: var(--primary);
+            text-decoration: underline;
+            cursor: pointer;
+        }
 
         tr:hover {
             background: #f8fafc;
@@ -358,6 +364,10 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             border-left: 4px solid var(--primary);
             transition: all 0.3s;
+        }
+        
+        .stat-card[onclick] {
+            cursor: pointer;
         }
 
         .stat-card:hover {
@@ -634,14 +644,14 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
-            <button class="tab" onclick="switchTab('invoices')">Facturas</button>
-            <button class="tab" onclick="switchTab('suppliers')">Proveedores</button>
-            <button class="tab" onclick="switchTab('payments')">Historial de Pagos</button>
-            <button class="tab" onclick="switchTab('import')">Importar BSale</button>
-            <button class="tab" onclick="switchTab('backup')">Respaldo y Seguridad</button>
-            <button class="tab" onclick="switchTab('audit')">Auditoría</button>
-            <button class="tab" onclick="switchTab('reminders')">Recordatorios</button>
+            <button class="tab active" data-tab="dashboard" onclick="switchTab(event)">Dashboard</button>
+            <button class="tab" data-tab="invoices" onclick="switchTab(event)">Facturas</button>
+            <button class="tab" data-tab="suppliers" onclick="switchTab(event)">Proveedores</button>
+            <button class="tab" data-tab="payments" onclick="switchTab(event)">Historial de Pagos</button>
+            <button class="tab" data-tab="import" onclick="switchTab(event)">Importar BSale</button>
+            <button class="tab" data-tab="backup" onclick="switchTab(event)">Respaldo y Seguridad</button>
+            <button class="tab" data-tab="audit" onclick="switchTab(event)">Auditoría</button>
+            <button class="tab" data-tab="reminders" onclick="switchTab(event)">Recordatorios</button>
         </div>
 
         <div class="content">
@@ -656,19 +666,19 @@
                 </div>
 
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navigateTo('invoices', 'pendiente')">
                         <h3>Total Pendiente</h3>
                         <div class="stat-value" id="totalPending">$0</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navigateTo('invoices', 'vencido')">
                         <h3>Facturas Vencidas</h3>
                         <div class="stat-value" id="overdueCount">0</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navigateTo('invoices', 'próximo')">
                         <h3>Próximos Pagos (7 días)</h3>
                         <div class="stat-value" id="upcomingCount">0</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="navigateTo('suppliers')">
                         <h3>Total Proveedores</h3>
                         <div class="stat-value" id="supplierCount">0</div>
                     </div>
@@ -686,6 +696,14 @@
 
             <div id="invoices" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Registro de Facturas</h2>
+                
+                <div class="search-box">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="invoiceSearch" placeholder="Buscar por factura, proveedor o estado (pendiente, pagado, vencido)..." onkeyup="updateInvoiceTable()">
+                </div>
                 
                 <form id="invoiceForm" class="form-grid">
                     <div class="form-group">
@@ -1256,6 +1274,25 @@
         </div>
     </div>
 
+    <div id="assignSupplierModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Asignar Proveedor a Factura</h2>
+            <form id="assignSupplierForm">
+                <div class="form-group">
+                    <label>Seleccionar Proveedor Existente *</label>
+                    <select id="assignSupplierSelect" required>
+                        <option value="">Cargando...</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" class="btn btn-success" onclick="confirmSupplierAssignment()">Asignar Proveedor</button>
+                    <button type="button" class="btn btn-danger" onclick="closeAssignSupplierModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <script>
         // Configuración del sistema
         const SYSTEM_CONFIG = {
@@ -1275,7 +1312,7 @@
         let backupHistory = JSON.parse(localStorage.getItem('backupHistory')) || [];
         let importHistory = JSON.parse(localStorage.getItem('importHistory')) || [];
         let currentUser = JSON.parse(localStorage.getItem('currentUser')) || { name: 'Admin', id: 'user001', role: 'admin' };
-        let currentPaymentInvoice = null;
+        let currentInvoiceToModify = null;
         let autoBackupInterval = null;
         let pendingImportData = null;
         let pendingImportType = null;
@@ -1368,12 +1405,11 @@
         };
 
         // Función para cambiar tabs
-        function switchTab(tabName) {
-            const tabs = document.querySelectorAll('.tab');
-            const contents = document.querySelectorAll('.tab-content');
+        function switchTab(event) {
+            const tabName = event.target.dataset.tab;
             
-            tabs.forEach(tab => tab.classList.remove('active'));
-            contents.forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
@@ -1390,6 +1426,80 @@
 
             logAuditEvent('navigation', `Navegó a ${tabName}`);
         }
+
+        // NUEVA FUNCIÓN PARA NAVEGAR CON FILTRO
+        function navigateTo(tabName, filter = '') {
+            const tabButton = document.querySelector(`.tab[data-tab="${tabName}"]`);
+            if (tabButton) {
+                // Usamos el evento 'click' para mantener la lógica de switchTab centralizada
+                tabButton.click();
+            }
+            
+            if (tabName === 'invoices' && filter) {
+                const searchInput = document.getElementById('invoiceSearch');
+                searchInput.value = filter;
+                updateInvoiceTable(); // Llama a la función de actualizado con el filtro aplicado
+            }
+        }
+        
+        // ======================= NUEVAS FUNCIONES PARA ASIGNAR PROVEEDOR =======================
+        
+        function assignSupplier(invoiceId) {
+            currentInvoiceToModify = invoices.find(inv => inv.id === invoiceId);
+            if (!currentInvoiceToModify) return;
+
+            const modal = document.getElementById('assignSupplierModal');
+            const select = document.getElementById('assignSupplierSelect');
+            
+            // Llenar el select con proveedores existentes
+            select.innerHTML = '<option value="">Seleccione un proveedor</option>';
+            suppliers.forEach(supplier => {
+                const option = document.createElement('option');
+                option.value = supplier.id;
+                option.textContent = `${supplier.name} (${supplier.ruc})`;
+                select.appendChild(option);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function closeAssignSupplierModal() {
+            document.getElementById('assignSupplierModal').classList.remove('active');
+            currentInvoiceToModify = null;
+        }
+
+        function confirmSupplierAssignment() {
+            if (!currentInvoiceToModify) return;
+
+            const select = document.getElementById('assignSupplierSelect');
+            const selectedSupplierId = select.value;
+            
+            if (!selectedSupplierId) {
+                showAlert('Debe seleccionar un proveedor', 'warning');
+                return;
+            }
+            
+            const selectedSupplier = suppliers.find(s => s.id == selectedSupplierId);
+            
+            // Actualizar la factura
+            currentInvoiceToModify.supplierId = selectedSupplier.id;
+            currentInvoiceToModify.supplierName = selectedSupplier.name;
+            
+            // Guardar cambios
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            
+            // Registrar en auditoría
+            logAuditEvent('update', `Proveedor asignado a factura ${currentInvoiceToModify.invoiceNumber}`, { 
+                invoiceId: currentInvoiceToModify.id,
+                newSupplier: selectedSupplier.name
+            });
+            
+            // Actualizar la vista y cerrar modal
+            updateInvoiceTable();
+            closeAssignSupplierModal();
+            showAlert('Proveedor asignado correctamente', 'success');
+        }
+
 
         // Sistema de auditoría
         function logAuditEvent(action, description, details = {}) {
@@ -1930,11 +2040,32 @@
         // Actualizar tabla de facturas
         function updateInvoiceTable() {
             const tbody = document.getElementById('invoiceTableBody');
+            const searchTerm = document.getElementById('invoiceSearch').value.toLowerCase();
             tbody.innerHTML = '';
             
-            invoices.forEach(invoice => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const filteredInvoices = invoices.filter(invoice => {
+                const invoiceText = `${invoice.invoiceNumber} ${invoice.supplierName} ${invoice.status}`.toLowerCase();
+                let matchesSearch = invoiceText.includes(searchTerm);
+                
+                // Lógica de filtrado especial para "vencido", "pendiente" y "próximo"
+                if (searchTerm === 'vencido') {
+                    matchesSearch = invoice.status !== 'paid' && new Date(invoice.dueDate) < today;
+                } else if (searchTerm === 'pendiente') {
+                    matchesSearch = invoice.status === 'pending' && new Date(invoice.dueDate) >= today;
+                } else if (searchTerm === 'próximo') {
+                    const sevenDaysLater = new Date();
+                    sevenDaysLater.setDate(today.getDate() + 7);
+                    matchesSearch = invoice.status === 'pending' && new Date(invoice.dueDate) >= today && new Date(invoice.dueDate) <= sevenDaysLater;
+                }
+                
+                return matchesSearch;
+            });
+            
+            filteredInvoices.forEach(invoice => {
                 const row = tbody.insertRow();
-                const today = new Date();
                 const dueDate = new Date(invoice.dueDate);
                 let statusClass = 'status-pending';
                 let statusText = 'Pendiente';
@@ -1946,10 +2077,16 @@
                     statusClass = 'status-overdue';
                     statusText = 'Vencido';
                 }
+
+                // Generar celda de proveedor
+                let supplierCell = `<td>${invoice.supplierName}</td>`;
+                if (!invoice.supplierId || invoice.supplierName === 'Sin proveedor') {
+                    supplierCell = `<td><a href="#" onclick="assignSupplier(${invoice.id})">Sin proveedor</a></td>`;
+                }
                 
                 row.innerHTML = `
                     <td>${invoice.invoiceNumber}</td>
-                    <td>${invoice.supplierName}</td>
+                    ${supplierCell}
                     <td>${formatCurrencyCLP(invoice.amount)}</td>
                     <td>${formatDate(invoice.entryDate)}</td>
                     <td>${formatDate(invoice.dueDate)}</td>
@@ -1980,6 +2117,7 @@
             });
         }
 
+
         // Actualizar select de proveedores
         function updateSupplierSelect() {
             const select = document.getElementById('supplierSelect');
@@ -1995,17 +2133,17 @@
 
         // Pagar factura
         function payInvoice(invoiceId) {
-            currentPaymentInvoice = invoiceId;
+            currentInvoiceToModify = invoices.find(inv => inv.id === invoiceId);
+            if (!currentInvoiceToModify) return;
             document.getElementById('paymentModal').classList.add('active');
             document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
         }
 
         // Confirmar pago
         function confirmPayment() {
-            if (!currentPaymentInvoice) return;
+            if (!currentInvoiceToModify) return;
             
-            const invoice = invoices.find(inv => inv.id === currentPaymentInvoice);
-            if (!invoice) return;
+            const invoice = currentInvoiceToModify;
             
             const payment = {
                 id: Date.now(),
@@ -2050,7 +2188,7 @@
         function closePaymentModal() {
             document.getElementById('paymentModal').classList.remove('active');
             document.getElementById('paymentModalForm').reset();
-            currentPaymentInvoice = null;
+            currentInvoiceToModify = null;
         }
 
         // Actualizar tabla de pagos
@@ -3387,17 +3525,13 @@
                 document.getElementById('bankDetails').value = supplier.bankDetails || '';
                 
                 // Cambiar a la pestaña de proveedores
-                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                document.querySelectorAll('.tab')[2].classList.add('active');
-                document.getElementById('suppliers').classList.add('active');
-                
+                const supplierTabButton = document.querySelector('.tab[data-tab="suppliers"]');
+                if (supplierTabButton) supplierTabButton.click();
+
                 showAlert('Edite los datos del proveedor y guarde los cambios', 'info');
             }
         }
     </script>
 </body>
 </html>
-
-
 
