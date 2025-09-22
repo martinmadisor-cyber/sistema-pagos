@@ -645,7 +645,6 @@
         </div>
 
         <div class="content">
-            <!-- Dashboard -->
             <div id="dashboard" class="tab-content active">
                 <div class="alert alert-info">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -685,7 +684,6 @@
                 </div>
             </div>
 
-            <!-- Facturas -->
             <div id="invoices" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Registro de Facturas</h2>
                 
@@ -765,7 +763,6 @@
                 </div>
             </div>
 
-            <!-- Proveedores -->
             <div id="suppliers" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Gestión de Proveedores</h2>
                 
@@ -775,8 +772,8 @@
                         <input type="text" id="supplierName" required placeholder="Nombre completo">
                     </div>
                     <div class="form-group">
-                        <label>RUC/DNI *</label>
-                        <input type="text" id="supplierRuc" required placeholder="12345678901">
+                        <label>RUT *</label>
+                        <input type="text" id="supplierRuc" required placeholder="12.345.678-9">
                     </div>
                     <div class="form-group">
                         <label>Email *</label>
@@ -784,7 +781,7 @@
                     </div>
                     <div class="form-group">
                         <label>Teléfono *</label>
-                        <input type="tel" id="supplierPhone" required placeholder="+51 999 999 999">
+                        <input type="tel" id="supplierPhone" required placeholder="+56 9 9999 9999">
                     </div>
                     <div class="form-group">
                         <label>Dirección</label>
@@ -825,7 +822,7 @@
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>RUC/DNI</th>
+                                <th>RUT</th>
                                 <th>Email</th>
                                 <th>Teléfono</th>
                                 <th>Categoría</th>
@@ -839,7 +836,6 @@
                 </div>
             </div>
 
-            <!-- Historial de Pagos -->
             <div id="payments" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Historial de Pagos</h2>
                 
@@ -870,7 +866,6 @@
                 </div>
             </div>
 
-            <!-- Importar desde BSale -->
             <div id="import" class="tab-content">
                 <h2 style="margin-bottom: 20px;">🔄 Importador BSale - ERP Integration</h2>
                 
@@ -1042,12 +1037,10 @@
                 <div style="margin-top: 30px;">
                     <h3 style="margin-bottom: 20px;">📝 Historial de Importaciones</h3>
                     <div class="backup-history" id="importHistory">
-                        <!-- Se llenará dinámicamente -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
-            <!-- Respaldo y Seguridad -->
             <div id="backup" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Centro de Respaldo y Seguridad</h2>
                 
@@ -1105,8 +1098,7 @@
 
                 <h3 style="margin-top: 30px; margin-bottom: 20px;">📋 Historial de Respaldos</h3>
                 <div class="backup-history" id="backupHistory">
-                    <!-- Se llenará dinámicamente -->
-                </div>
+                    </div>
 
                 <h3 style="margin-top: 30px; margin-bottom: 20px;">⚙️ Configuración de Seguridad</h3>
                 <div class="form-grid">
@@ -1141,7 +1133,6 @@
                 </div>
             </div>
 
-            <!-- Auditoría -->
             <div id="audit" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Registro de Auditoría</h2>
                 
@@ -1191,11 +1182,9 @@
                 </div>
 
                 <div class="audit-log" id="auditLog">
-                    <!-- Se llenará dinámicamente -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Recordatorios -->
             <div id="reminders" class="tab-content">
                 <h2 style="margin-bottom: 20px;">Configuración de Recordatorios</h2>
                 
@@ -1239,7 +1228,6 @@
         </div>
     </div>
 
-    <!-- Modal para pago -->
     <div id="paymentModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom: 20px;">Registrar Pago</h2>
@@ -1717,7 +1705,7 @@
                         </div>
                     </div>
                     <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" 
-                                onclick="downloadBackup('${backup.id}')">
+                            onclick="downloadBackup('${backup.id}')">
                         Descargar
                     </button>
                 `;
@@ -1953,7 +1941,7 @@
                 row.innerHTML = `
                     <td>${invoice.invoiceNumber}</td>
                     <td>${invoice.supplierName}</td>
-                    <td>$${invoice.amount.toFixed(2)}</td>
+                    <td>${formatCurrencyCLP(invoice.amount)}</td>
                     <td>${formatDate(invoice.entryDate)}</td>
                     <td>${formatDate(invoice.dueDate)}</td>
                     <td>${invoice.costCenter || 'N/A'}</td>
@@ -2067,7 +2055,7 @@
                     <td>${formatDate(payment.paymentDate)}</td>
                     <td>${payment.invoiceNumber}</td>
                     <td>${payment.supplierName}</td>
-                    <td>$${payment.amount.toFixed(2)}</td>
+                    <td>${formatCurrencyCLP(payment.amount)}</td>
                     <td>${capitalizeFirst(payment.paymentMethod)}</td>
                     <td>${payment.processedBy}</td>
                     <td>
@@ -2138,7 +2126,7 @@
             // Monto
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text(`MONTO TOTAL: $${invoice.amount.toFixed(2)}`, 20, 160);
+            doc.text(`MONTO TOTAL: ${formatCurrencyCLP(invoice.amount)}`, 20, 160);
             
             // Estado
             doc.text(`ESTADO: ${invoice.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}`, 20, 170);
@@ -2193,7 +2181,7 @@
             doc.setFont(undefined, 'normal');
             doc.text(`Factura: ${payment.invoiceNumber}`, 20, 95);
             doc.text(`Proveedor: ${payment.supplierName}`, 20, 105);
-            doc.text(`Monto: $${payment.amount.toFixed(2)}`, 20, 115);
+            doc.text(`Monto: ${formatCurrencyCLP(payment.amount)}`, 20, 115);
             doc.text(`Método: ${capitalizeFirst(payment.paymentMethod)}`, 20, 125);
             doc.text(`Procesado por: ${payment.processedBy}`, 20, 135);
             
@@ -2243,7 +2231,7 @@
             // Hoja de Proveedores
             const supplierData = suppliers.map(sup => ({
                 'Nombre': sup.name,
-                'RUC/DNI': sup.ruc,
+                'RUT': sup.ruc,
                 'Email': sup.email,
                 'Teléfono': sup.phone,
                 'Dirección': sup.address,
@@ -2354,7 +2342,7 @@
             
             const totalPending = pendingInvoices.reduce((sum, inv) => sum + inv.amount, 0);
             
-            document.getElementById('totalPending').textContent = `$${totalPending.toFixed(2)}`;
+            document.getElementById('totalPending').textContent = formatCurrencyCLP(totalPending);
             document.getElementById('overdueCount').textContent = overdueInvoices.length;
             document.getElementById('upcomingCount').textContent = upcomingInvoices.length;
             document.getElementById('supplierCount').textContent = suppliers.length;
@@ -2404,7 +2392,7 @@
                             </svg>
                             <div>
                                 <strong>${invoice.invoiceNumber}</strong> - ${invoice.supplierName}<br>
-                                Vence: ${formatDate(invoice.dueDate)} - Monto: $${invoice.amount.toFixed(2)}<br>
+                                Vence: ${formatDate(invoice.dueDate)} - Monto: ${formatCurrencyCLP(invoice.amount)}<br>
                                 Centro de Costo: ${invoice.costCenter || 'N/A'} | Proyecto: ${invoice.project || 'N/A'}
                             </div>
                         `;
@@ -2496,6 +2484,20 @@
                 month: '2-digit', 
                 year: 'numeric' 
             });
+        }
+        
+        // NUEVA FUNCIÓN PARA FORMATEAR MONEDA CHILENA
+        function formatCurrencyCLP(number) {
+          if (typeof number !== 'number') {
+            number = parseFloat(number) || 0;
+          }
+          // Convierte el número a un string con formato chileno (CLP), sin decimales.
+          return new Intl.NumberFormat('es-CL', {
+            style: 'currency',
+            currency: 'CLP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+          }).format(number);
         }
 
         // Formatear fecha y hora
@@ -2651,68 +2653,70 @@
         });
 
         // ============= FUNCIONES DE IMPORTACIÓN BSale =============
-
-// ============= SINCRONIZACIÓN DIRECTA CON VERCEL =============
-
-// CAMBIA ESTO POR TU URL DE VERCEL
-const VERCEL_API = 'https://bsale-api-gamma.vercel.app'; // <-- TU URL REAL
-
-// Agregar botón de sincronización directa
-function initDirectSync() {
-    const importTab = document.getElementById('import');
-    if (!importTab) return;
-    
-    // Crear botón
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-success';
-    btn.style.marginTop = '20px';
-    btn.innerHTML = '🔄 Sincronizar con BSale (Directo)';
-    btn.onclick = async function() {
-        try {
-            showAlert('Sincronizando...', 'info');
+        
+        // ============= SINCRONIZACIÓN DIRECTA CON VERCEL =============
+        
+        // CAMBIA ESTO POR TU URL DE VERCEL
+        const VERCEL_API = 'https://bsale-api-gamma.vercel.app'; // <-- TU URL REAL
+        
+        // Agregar botón de sincronización directa
+        function initDirectSync() {
+            const importTab = document.getElementById('import');
+            if (!importTab) return;
             
-            const response = await fetch(`${VERCEL_API}/api/sync?type=documents`);
-            const data = await response.json();
-            
-            if (data.success) {
-                // Procesar facturas
-                data.data.forEach(doc => {
-                    const invoice = {
-                        id: Date.now() + Math.random(),
-                        invoiceNumber: doc.number || 'SIN-NUMERO',
-                        supplierName: doc.client?.name || 'Sin proveedor',
-                        amount: doc.totalAmount || 0,
-                        entryDate: new Date().toISOString().split('T')[0],
-                        dueDate: new Date().toISOString().split('T')[0],
-                        status: 'pending',
-                        paymentMethod: 'transferencia'
-                    };
+            // Crear botón
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-success';
+            btn.style.marginTop = '20px';
+            btn.innerHTML = '🔄 Sincronizar con BSale (Directo)';
+            btn.onclick = async function() {
+                try {
+                    showAlert('Sincronizando...', 'info');
                     
-                    if (!invoices.find(i => i.invoiceNumber === invoice.invoiceNumber)) {
-                        invoices.push(invoice);
+                    const response = await fetch(`${VERCEL_API}/api/sync?type=documents`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Procesar facturas
+                        data.data.forEach(doc => {
+                            const invoice = {
+                                id: Date.now() + Math.random(),
+                                invoiceNumber: doc.number || 'SIN-NUMERO',
+                                supplierName: doc.client?.name || 'Sin proveedor',
+                                amount: doc.totalAmount || 0,
+                                entryDate: new Date().toISOString().split('T')[0],
+                                dueDate: new Date().toISOString().split('T')[0],
+                                status: 'pending',
+                                paymentMethod: 'transferencia'
+                            };
+                            
+                            if (!invoices.find(i => i.invoiceNumber === invoice.invoiceNumber)) {
+                                invoices.push(invoice);
+                            }
+                        });
+                        
+                        localStorage.setItem('invoices', JSON.stringify(invoices));
+                        updateInvoiceTable();
+                        showAlert('✅ Sincronización completa', 'success');
+                    } else {
+                        throw new Error(data.error || 'Respuesta no exitosa de la API');
                     }
-                });
-                
-                localStorage.setItem('invoices', JSON.stringify(invoices));
-                updateInvoiceTable();
-                showAlert('✅ Sincronización completa', 'success');
+                } catch (error) {
+                    showAlert('Error de sincronización: ' + error.message, 'danger');
+                }
+            };
+            
+            // Agregar después del título
+            const title = importTab.querySelector('h2');
+            if (title) {
+                title.after(btn);
             }
-        } catch (error) {
-            showAlert('Error: ' + error.message, 'danger');
         }
-    };
-    
-    // Agregar después del título
-    const title = importTab.querySelector('h2');
-    if (title) {
-        title.after(btn);
-    }
-}
-
-// Ejecutar cuando cargue
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(initDirectSync, 1000);
-});
+        
+        // Ejecutar cuando cargue
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initDirectSync, 1000);
+        });
         
         // Manejar archivo de importación
         async function handleImportFile(event, type) {
@@ -2967,12 +2971,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 methodLower.includes('deposit') || methodLower.includes('depós')) {
                 return 'transferencia';
             } else if (methodLower.includes('efectivo') || methodLower.includes('cash') || 
-                         methodLower.includes('contado')) {
+                       methodLower.includes('contado')) {
                 return 'efectivo';
             } else if (methodLower.includes('cheque') || methodLower.includes('check')) {
                 return 'cheque';
             } else if (methodLower.includes('tarjeta') || methodLower.includes('card') || 
-                         methodLower.includes('crédito') || methodLower.includes('débito')) {
+                       methodLower.includes('crédito') || methodLower.includes('débito')) {
                 return 'tarjeta';
             } else {
                 return 'otro';
@@ -3025,7 +3029,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (type === 'invoices') {
                 headers = ['Factura', 'Proveedor', 'Monto', 'Fecha', 'Vencimiento', 'Estado'];
             } else if (type === 'suppliers') {
-                headers = ['Nombre', 'RUC/DNI', 'Email', 'Teléfono', 'Categoría'];
+                headers = ['Nombre', 'RUT', 'Email', 'Teléfono', 'Categoría'];
             } else if (type === 'payments') {
                 headers = ['Factura', 'Proveedor', 'Monto', 'Fecha Pago', 'Método'];
             }
@@ -3046,7 +3050,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.innerHTML = `
                         <td>${item.invoiceNumber || 'N/A'}</td>
                         <td>${item.supplierName || 'N/A'}</td>
-                        <td>${(item.amount || 0).toFixed(2)}</td>
+                        <td>${formatCurrencyCLP(item.amount) || 'N/A'}</td>
                         <td>${formatDate(item.entryDate) || 'N/A'}</td>
                         <td>${formatDate(item.dueDate) || 'N/A'}</td>
                         <td><span class="status-badge status-${item.status || 'pending'}">${item.status || 'pending'}</span></td>
@@ -3063,7 +3067,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.innerHTML = `
                         <td>${item.invoiceNumber || 'N/A'}</td>
                         <td>${item.supplierName || 'N/A'}</td>
-                        <td>${(item.amount || 0).toFixed(2)}</td>
+                        <td>${formatCurrencyCLP(item.amount) || 'N/A'}</td>
                         <td>${formatDate(item.paymentDate) || 'N/A'}</td>
                         <td>${capitalizeFirst(item.paymentMethod) || 'N/A'}</td>
                     `;
