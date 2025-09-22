@@ -1357,7 +1357,7 @@
                 'proveedor': 'supplierName',
                 'document.state': 'status',
                 'state': 'status',
-                'Estado': 'status',
+                'Estado': 'status', // Aseguramos que 'Estado' también se mapee
                 'estado': 'status',
                 'paymentType': 'paymentMethod',
                 'tipoPago': 'paymentMethod',
@@ -2031,7 +2031,7 @@
 
             const filteredInvoices = invoices.filter(invoice => {
                 const invoiceText = `${invoice.invoiceNumber} ${invoice.supplierName} ${invoice.status}`.toLowerCase();
-                let matchesSearch = invoiceText.includes(searchTerm);
+                let matchesSearch = searchTerm === '' || invoiceText.includes(searchTerm);
                 
                 // Lógica de filtrado especial para "vencido", "pendiente" y "próximo"
                 if (searchTerm === 'vencido') {
@@ -2764,8 +2764,7 @@
         
         // ============= SINCRONIZACIÓN DIRECTA CON VERCEL =============
         
-        // CAMBIA ESTO POR TU URL DE VERCEL
-        const VERCEL_API = 'https://bsale-api-gamma.vercel.app'; // <-- TU URL REAL
+        const VERCEL_API = 'https://bsale-api-gamma.vercel.app'; // <-- URL REAL
         
         // Agregar botón de sincronización directa
         function initDirectSync() {
@@ -2838,23 +2837,18 @@
                 const fileName = file.name.toLowerCase();
                 
                 if (fileName.endsWith('.json')) {
-                    // Procesar JSON
                     const text = await readFileAsText(file);
                     data = JSON.parse(text);
                 } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                    // Procesar Excel
                     data = await readExcelFile(file);
                 } else if (fileName.endsWith('.csv')) {
-                    // Procesar CSV
                     data = await readCSVFile(file);
                 } else {
                     throw new Error('Formato de archivo no soportado');
                 }
                 
-                // Procesar y mapear datos según el tipo
                 const processedData = processImportData(data, type);
                 
-                // Mostrar vista previa
                 showImportPreview(processedData, type);
                 
             } catch (error) {
@@ -2862,7 +2856,6 @@
                 logAuditEvent('import_error', 'Error en importación', { error: error.message, type });
             }
             
-            // Limpiar el input
             event.target.value = '';
         }
 
@@ -2884,17 +2877,12 @@
                     try {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                        
-                        // Obtener la primera hoja
                         const firstSheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[firstSheetName];
-                        
-                        // Convertir a JSON
                         const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
                             raw: false,
                             dateNF: 'yyyy-mm-dd'
                         });
-                        
                         resolve(jsonData);
                     } catch (error) {
                         reject(error);
@@ -2941,7 +2929,6 @@
             const mapping = BSALE_FIELD_MAPPING[type];
             const processedData = [];
             
-            // Si es un objeto BSale típico, extraer el array de datos
             if (rawData.items) rawData = rawData.items;
             if (rawData.data) rawData = rawData.data;
             if (!Array.isArray(rawData)) rawData = [rawData];
@@ -2949,14 +2936,11 @@
             rawData.forEach(item => {
                 const processedItem = {};
                 
-                // Mapear campos conocidos
                 Object.keys(mapping).forEach(bsaleField => {
                     const ourField = mapping[bsaleField];
                     let value = getNestedProperty(item, bsaleField);
                     
-                    // Procesar valores especiales
                     if (ourField === 'status' && value) {
-                        // Convertir estados de BSale a nuestro formato
                         if (value === 0 || value === 'pending' || value === 'pendiente') {
                             value = 'pending';
                         } else if (value === 1 || value === 'paid' || value === 'pagado') {
@@ -2964,22 +2948,18 @@
                         }
                     }
                     
-                    // Procesar fechas
                     if ((ourField === 'entryDate' || ourField === 'dueDate' || ourField === 'paymentDate') && value) {
                         value = formatBSaleDate(value);
                     }
                     
-                    // Procesar montos
                     if (ourField === 'amount' && value) {
                         value = parseFloat(value) || 0;
-                        // Si está configurado IVA
                         const includeIVA = localStorage.getItem('includeIVA') || 'yes';
                         if (includeIVA === 'no' && item.tax) {
                             value += parseFloat(item.tax) || 0;
                         }
                     }
                     
-                    // Procesar método de pago
                     if (ourField === 'paymentMethod' && value) {
                         value = normalizePaymentMethod(value);
                     }
@@ -2989,14 +2969,12 @@
                     }
                 });
                 
-                // Agregar campos adicionales según el tipo
                 if (type === 'invoices') {
                     processedItem.id = Date.now() + Math.random();
                     processedItem.createdBy = currentUser.name;
                     processedItem.createdAt = new Date().toISOString();
                     processedItem.status = processedItem.status || 'pending';
                     
-                    // Buscar o crear proveedor
                     if (processedItem.supplierName && !processedItem.supplierId) {
                         const supplier = suppliers.find(s => 
                             s.name.toLowerCase() === processedItem.supplierName.toLowerCase()
@@ -3015,7 +2993,6 @@
                     processedItem.processedAt = new Date().toISOString();
                 }
                 
-                // Solo agregar si tiene datos mínimos
                 if (hasMinimumData(processedItem, type)) {
                     processedData.push(processedItem);
                 }
@@ -3045,11 +3022,9 @@
             const dateFormat = localStorage.getItem('bsaleDateFormat') || 'YYYY-MM-DD';
             
             if (dateFormat === 'timestamp') {
-                // Timestamp Unix
                 const date = new Date(parseInt(dateValue) * 1000);
                 return date.toISOString().split('T')[0];
             } else if (typeof dateValue === 'string') {
-                // Procesar diferentes formatos de fecha
                 if (dateFormat === 'DD/MM/YYYY') {
                     const parts = dateValue.split('/');
                     if (parts.length === 3) {
@@ -3061,7 +3036,6 @@
                         return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
                     }
                 }
-                // Intentar parsear como está
                 const date = new Date(dateValue);
                 if (!isNaN(date)) {
                     return date.toISOString().split('T')[0];
@@ -3113,14 +3087,12 @@
             const tableHead = document.getElementById('previewTableHead');
             const tableBody = document.getElementById('previewTableBody');
             
-            // Actualizar resumen
             const duplicates = countDuplicates(data, type);
             summary.innerHTML = `
                 Se encontraron <strong>${data.length}</strong> registros para importar
                 ${duplicates > 0 ? ` (<strong>${duplicates}</strong> posibles duplicados)` : ''}
             `;
             
-            // Limpiar tabla
             tableHead.innerHTML = '';
             tableBody.innerHTML = '';
             
@@ -3130,7 +3102,6 @@
                 return;
             }
             
-            // Crear encabezados según el tipo
             const headerRow = document.createElement('tr');
             let headers = [];
             
@@ -3149,7 +3120,6 @@
             });
             tableHead.appendChild(headerRow);
             
-            // Mostrar primeros 10 registros
             const previewData = data.slice(0, 10);
             previewData.forEach((item, index) => {
                 const row = document.createElement('tr');
@@ -3181,7 +3151,6 @@
                     `;
                 }
                 
-                // Marcar duplicados
                 if (isDuplicate(item, type)) {
                     row.style.background = '#fef3c7';
                 }
@@ -3189,7 +3158,6 @@
                 tableBody.appendChild(row);
             });
             
-            // Si hay más de 10, mostrar mensaje
             if (data.length > 10) {
                 const moreRow = document.createElement('tr');
                 moreRow.innerHTML = `<td colspan="${headers.length}" style="text-align: center; font-style: italic;">
@@ -3234,7 +3202,6 @@
             let skipped = 0;
             let updated = 0;
             
-            // Crear respaldo antes de importar
             autoBackup();
             
             dataToImport.forEach(item => {
@@ -3245,7 +3212,6 @@
                         skipped++;
                         return;
                     } else if (duplicateHandling === 'update') {
-                        // Actualizar existente
                         updateExistingRecord(item, typeToImport);
                         updated++;
                         return;
@@ -3257,7 +3223,6 @@
                     }
                 }
                 
-                // Importar nuevo registro
                 if (typeToImport === 'invoices') {
                     invoices.push(item);
                     imported++;
@@ -3265,7 +3230,6 @@
                     suppliers.push(item);
                     imported++;
                 } else if (typeToImport === 'payments') {
-                    // Actualizar factura como pagada si existe
                     const invoice = invoices.find(inv => inv.invoiceNumber === item.invoiceNumber);
                     if (invoice) {
                         invoice.status = 'paid';
@@ -3276,12 +3240,10 @@
                 }
             });
             
-            // Guardar en localStorage
             localStorage.setItem('invoices', JSON.stringify(invoices));
             localStorage.setItem('suppliers', JSON.stringify(suppliers));
             localStorage.setItem('payments', JSON.stringify(payments));
             
-            // Registrar en historial de importación
             const importRecord = {
                 id: Date.now(),
                 timestamp: new Date().toISOString(),
@@ -3298,7 +3260,6 @@
             importHistory.unshift(importRecord);
             localStorage.setItem('importHistory', JSON.stringify(importHistory));
             
-            // Registrar en auditoría
             logAuditEvent('import', `Importación desde BSale completada`, {
                 type: typeToImport,
                 imported,
@@ -3306,14 +3267,11 @@
                 skipped
             });
             
-            // Actualizar vistas
             updateAllViews();
             updateImportHistory();
             
-            // Limpiar y ocultar preview
             cancelImport();
             
-            // Mostrar resultado
             showAlert(`Importación completada: ${imported} nuevos, ${updated} actualizados, ${skipped} omitidos`, 'success');
         }
 
@@ -3366,7 +3324,6 @@
             showAlert('API de BSale configurada. Puede realizar importaciones automáticas.', 'success');
             logAuditEvent('api_setup', 'API de BSale configurada');
 
-            // Feedback visual de éxito
             setupApiBtn.style.background = 'var(--success)';
             setTimeout(() => {
                 setupApiBtn.style.background = 'var(--gray)';
@@ -3385,11 +3342,9 @@
             if (!startDate) return;
 
             showAlert('Sincronizando con BSale...', 'info');
-            // Simular un retraso para que se vea la notificación de "Sincronizando..."
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             try {
-                // Simulación de llamada a la API de BSale
                 const response = await fetch(`https://api.bsale.cl/v1/documents.json?limit=200&offset=0&document_type_id=1&state=0&since_date=${startDate}`, {
                     method: 'GET',
                     headers: {
@@ -3471,11 +3426,10 @@
 
         // ============= FIN FUNCIONES DE IMPORTACIÓN BSale =============
 
-        // Función para editar proveedor (placeholder)
+        // Función para editar proveedor
         function editSupplier(supplierId) {
             const supplier = suppliers.find(s => s.id === supplierId);
             if (supplier) {
-                // Llenar el formulario con los datos del proveedor
                 document.getElementById('supplierName').value = supplier.name;
                 document.getElementById('supplierRuc').value = supplier.ruc;
                 document.getElementById('supplierEmail').value = supplier.email;
@@ -3485,7 +3439,6 @@
                 document.getElementById('supplierCategory').value = supplier.category || 'otro';
                 document.getElementById('bankDetails').value = supplier.bankDetails || '';
                 
-                // Cambiar a la pestaña de proveedores
                 const supplierTabButton = document.querySelector('.tab[data-tab="suppliers"]');
                 if (supplierTabButton) supplierTabButton.click();
 
