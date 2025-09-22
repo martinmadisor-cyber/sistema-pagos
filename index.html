@@ -2930,23 +2930,26 @@
             });
         }
 
-        // Procesar datos de importación
+        // Procesar datos de importación (VERSIÓN MEJORADA)
         function processImportData(rawData, type) {
             const mapping = BSALE_FIELD_MAPPING[type];
             const processedData = [];
-            
+
             if (rawData.items) rawData = rawData.items;
             if (rawData.data) rawData = rawData.data;
             if (!Array.isArray(rawData)) rawData = [rawData];
-            
+
             rawData.forEach(item => {
                 const processedItem = {};
-                
+
+                // Iterar sobre las claves del objeto de datos (las columnas del archivo)
                 Object.keys(item).forEach(originalHeader => {
                     const cleanHeader = originalHeader.trim();
                     const ourField = mapping[cleanHeader];
-                    if(ourField) {
+                    
+                    if (ourField) { // Si encontramos una coincidencia en nuestro mapa
                         let value = item[originalHeader];
+                        
                         // Procesar valores especiales
                         if (ourField === 'status' && value) {
                             value = (String(value).toLowerCase() === 'pagado' || value === 1) ? 'paid' : 'pending';
@@ -2955,7 +2958,8 @@
                             value = formatBSaleDate(value);
                         }
                         if (ourField === 'amount' && value) {
-                            value = parseFloat(String(value).replace(/[^0-9.-]+/g,"")) || 0;
+                             // Limpia el valor de cualquier caracter que no sea número o punto/coma decimal
+                            value = parseFloat(String(value).replace(/[^0-9,-]+/g,"").replace(",", ".")) || 0;
                         }
                         if (ourField === 'paymentMethod' && value) {
                             value = normalizePaymentMethod(value);
@@ -2963,16 +2967,13 @@
                         processedItem[ourField] = value;
                     }
                 });
-                
+
                 // Agregar campos adicionales
                 if (type === 'invoices') {
                     processedItem.id = Date.now() + Math.random();
                     processedItem.createdBy = currentUser.name;
                     processedItem.createdAt = new Date().toISOString();
                     processedItem.status = processedItem.status || 'pending';
-                    if (processedItem.supplierName && !suppliers.some(s => s.name.toLowerCase() === processedItem.supplierName.toLowerCase())) {
-                       // Opcional: auto-crear proveedor si no existe
-                    }
                 }
                 
                 if (hasMinimumData(processedItem, type)) {
@@ -2981,18 +2982,6 @@
             });
             
             return processedData;
-        }
-
-        // Obtener propiedad anidada
-        function getNestedProperty(obj, path) {
-            // Esta función ahora busca sin ser sensible a mayúsculas/minúsculas
-            const lowerPath = path.toLowerCase();
-            for (const key in obj) {
-                if (key.toLowerCase() === lowerPath) {
-                    return obj[key];
-                }
-            }
-            return undefined;
         }
 
         // Formatear fecha de BSale
@@ -3008,13 +2997,23 @@
             if (!isNaN(date)) {
                 return date.toISOString().split('T')[0];
             }
+            // Intentar formato DD/MM/YYYY o DD-MM-YYYY
+            const parts = String(dateValue).split(/[-/]/);
+            if (parts.length === 3) {
+                const day = parts[0];
+                const month = parts[1];
+                const year = parts[2];
+                if (day.length === 2 && month.length === 2 && year.length === 4) {
+                    const isoDate = `${year}-${month}-${day}`;
+                    if (!isNaN(new Date(isoDate))) return isoDate;
+                }
+            }
             return null;
         }
 
         // Normalizar método de pago
         function normalizePaymentMethod(method) {
             const methodLower = method.toString().toLowerCase();
-            
             if (methodLower.includes('transfer')) return 'transferencia';
             if (methodLower.includes('efectivo')) return 'efectivo';
             if (methodLower.includes('cheque')) return 'cheque';
@@ -3025,6 +3024,7 @@
         // Verificar datos mínimos
         function hasMinimumData(item, type) {
             if (type === 'invoices') {
+                // Se verifica que amount no sea undefined, para permitir montos de 0.
                 return item.invoiceNumber && item.amount !== undefined;
             } else if (type === 'suppliers') {
                 return item.name && (item.ruc || item.email);
