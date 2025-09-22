@@ -1283,6 +1283,15 @@
         // Mapeo de campos BSale
         const BSALE_FIELD_MAPPING = {
             invoices: {
+                // Mapeos para el nuevo Excel
+                'Folio': 'invoiceNumber',
+                'Fecha Emision': 'entryDate',
+                'Fecha Vencimiento': 'dueDate',
+                'Monto Total': 'amount',
+                'Cliente': 'supplierName',
+                'Glosa': 'description',
+                
+                // Mapeos originales (se mantienen para compatibilidad)
                 'document.number': 'invoiceNumber',
                 'documentNumber': 'invoiceNumber',
                 'numero': 'invoiceNumber',
@@ -1301,6 +1310,7 @@
                 'proveedor': 'supplierName',
                 'document.state': 'status',
                 'state': 'status',
+                'Estado': 'status', // Aseguramos que 'Estado' también se mapee
                 'estado': 'status',
                 'paymentType': 'paymentMethod',
                 'tipoPago': 'paymentMethod',
@@ -1308,8 +1318,7 @@
                 'sucursal': 'costCenter',
                 'document.urlPdf': 'pdfUrl',
                 'document.description': 'description',
-                'descripcion': 'description',
-                'glosa': 'description'
+                'descripcion': 'description'
             },
             suppliers: {
                 'name': 'name',
@@ -2486,20 +2495,6 @@
             });
         }
         
-        // NUEVA FUNCIÓN PARA FORMATEAR MONEDA CHILENA
-        function formatCurrencyCLP(number) {
-          if (typeof number !== 'number') {
-            number = parseFloat(number) || 0;
-          }
-          // Convierte el número a un string con formato chileno (CLP), sin decimales.
-          return new Intl.NumberFormat('es-CL', {
-            style: 'currency',
-            currency: 'CLP',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-          }).format(number);
-        }
-
         // Formatear fecha y hora
         function formatDateTime(dateString) {
             if (!dateString) return 'N/A';
@@ -2526,6 +2521,20 @@
         function capitalizeFirst(str) {
             if (!str) return '';
             return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+        
+        // NUEVA FUNCIÓN PARA FORMATEAR MONEDA CHILENA
+        function formatCurrencyCLP(number) {
+          if (typeof number !== 'number') {
+            number = parseFloat(number) || 0;
+          }
+          // Convierte el número a un string con formato chileno (CLP), sin decimales.
+          return new Intl.NumberFormat('es-CL', {
+            style: 'currency',
+            currency: 'CLP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+          }).format(number);
         }
 
         // Inicializar usuario
@@ -3389,11 +3398,6 @@
     </script>
 </body>
 </html>
-
-
-
-
-
 
 
 
