@@ -1321,7 +1321,16 @@
         // Mapeo de campos BSale
         const BSALE_FIELD_MAPPING = {
             invoices: {
-                // Mapeos para el nuevo Excel
+                // Mapeos para el nuevo CSV
+                'Numero_Factura': 'invoiceNumber',
+                'Proveedor_Nombre': 'supplierName',
+                'Monto_Total': 'amount',
+                'Fecha_Ingreso': 'entryDate',
+                'Fecha_Vencimiento': 'dueDate',
+                'Estado_Pago': 'status',
+                'Centro_Costo': 'costCenter',
+                
+                // Mapeos para el Excel anterior
                 'Folio': 'invoiceNumber',
                 'Fecha Emision': 'entryDate',
                 'Fecha Vencimiento': 'dueDate',
@@ -1329,7 +1338,7 @@
                 'Cliente': 'supplierName',
                 'Glosa': 'description',
                 
-                // Mapeos originales (se mantienen para compatibilidad)
+                // Mapeos originales de API (se mantienen para compatibilidad)
                 'document.number': 'invoiceNumber',
                 'documentNumber': 'invoiceNumber',
                 'numero': 'invoiceNumber',
@@ -1348,7 +1357,7 @@
                 'proveedor': 'supplierName',
                 'document.state': 'status',
                 'state': 'status',
-                'Estado': 'status', // Aseguramos que 'Estado' también se mapee
+                'Estado': 'status',
                 'estado': 'status',
                 'paymentType': 'paymentMethod',
                 'tipoPago': 'paymentMethod',
@@ -1432,14 +1441,13 @@
         function navigateTo(tabName, filter = '') {
             const tabButton = document.querySelector(`.tab[data-tab="${tabName}"]`);
             if (tabButton) {
-                // Usamos el evento 'click' para mantener la lógica de switchTab centralizada
                 tabButton.click();
             }
             
             if (tabName === 'invoices' && filter) {
                 const searchInput = document.getElementById('invoiceSearch');
                 searchInput.value = filter;
-                updateInvoiceTable(); // Llama a la función de actualizado con el filtro aplicado
+                updateInvoiceTable();
             }
         }
         
@@ -1452,7 +1460,6 @@
             const modal = document.getElementById('assignSupplierModal');
             const select = document.getElementById('assignSupplierSelect');
             
-            // Llenar el select con proveedores existentes
             select.innerHTML = '<option value="">Seleccione un proveedor</option>';
             suppliers.forEach(supplier => {
                 const option = document.createElement('option');
@@ -1482,20 +1489,16 @@
             
             const selectedSupplier = suppliers.find(s => s.id == selectedSupplierId);
             
-            // Actualizar la factura
             currentInvoiceToModify.supplierId = selectedSupplier.id;
             currentInvoiceToModify.supplierName = selectedSupplier.name;
             
-            // Guardar cambios
             localStorage.setItem('invoices', JSON.stringify(invoices));
             
-            // Registrar en auditoría
             logAuditEvent('update', `Proveedor asignado a factura ${currentInvoiceToModify.invoiceNumber}`, { 
                 invoiceId: currentInvoiceToModify.id,
                 newSupplier: selectedSupplier.name
             });
             
-            // Actualizar la vista y cerrar modal
             updateInvoiceTable();
             closeAssignSupplierModal();
             showAlert('Proveedor asignado correctamente', 'success');
@@ -1512,7 +1515,7 @@
                 action: action,
                 description: description,
                 details: details,
-                ip: '192.168.1.1', // En producción, obtener IP real
+                ip: '192.168.1.1',
                 sessionId: generateSessionId()
             };
             
@@ -1527,12 +1530,10 @@
 
         // Sistema de respaldo automático
         function startAutoBackup() {
-            // Limpiar intervalo anterior si existe
             if (autoBackupInterval) {
                 clearInterval(autoBackupInterval);
             }
             
-            // Configurar nuevo intervalo
             const frequency = parseInt(localStorage.getItem('backupFrequency') || '5');
             const interval = frequency * 60 * 1000;
             
@@ -1540,7 +1541,6 @@
                 autoBackup();
             }, interval);
             
-            // Realizar respaldo inicial
             autoBackup();
         }
 
@@ -1556,20 +1556,16 @@
                 status: 'success'
             };
             
-            // Guardar en el historial
             backupHistory.unshift(backupEntry);
             if (backupHistory.length > SYSTEM_CONFIG.maxBackups) {
                 backupHistory = backupHistory.slice(0, SYSTEM_CONFIG.maxBackups);
             }
             localStorage.setItem('backupHistory', JSON.stringify(backupHistory));
             
-            // Guardar respaldo en localStorage con timestamp
             localStorage.setItem(`backup_${backupEntry.id}`, JSON.stringify(backup));
             
-            // Actualizar UI
             updateBackupStatus();
             
-            // Simular sincronización cloud
             simulateCloudSync();
         }
 
@@ -1583,7 +1579,7 @@
                     suppliers: suppliers,
                     invoices: invoices,
                     payments: payments,
-                    auditLog: auditLog.slice(0, 1000), // Últimos 1000 eventos
+                    auditLog: auditLog.slice(0, 1000),
                     settings: {
                         reminderDays: localStorage.getItem('reminderDays'),
                         notificationEmail: localStorage.getItem('notificationEmail'),
@@ -1612,7 +1608,6 @@
             const backup = createBackupData();
             const encryptedBackup = encryptData(backup);
             
-            // Crear archivo para descargar
             const blob = new Blob([JSON.stringify(encryptedBackup, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1622,10 +1617,8 @@
             a.click();
             document.body.removeChild(a);
             
-            // Registrar en auditoría
             logAuditEvent('backup', 'Respaldo manual creado', { size: blob.size });
             
-            // Agregar al historial
             const backupEntry = {
                 id: Date.now(),
                 timestamp: new Date().toISOString(),
@@ -1641,9 +1634,8 @@
             updateBackupHistory();
         }
 
-        // Encriptar datos (simulado - en producción usar librería real)
+        // Encriptar datos
         function encryptData(data) {
-            // Simulación de encriptación
             return {
                 encrypted: true,
                 algorithm: 'AES-256',
@@ -1654,7 +1646,6 @@
 
         // Desencriptar datos
         function decryptData(encryptedData) {
-            // Simulación de desencriptación
             if (encryptedData.encrypted) {
                 return JSON.parse(atob(encryptedData.data));
             }
@@ -1672,27 +1663,21 @@
                     const encryptedBackup = JSON.parse(e.target.result);
                     const backup = decryptData(encryptedBackup);
                     
-                    // Verificar integridad
                     if (!backup.version || !backup.data) {
                         throw new Error('Archivo de respaldo inválido');
                     }
                     
-                    // Confirmar restauración
                     if (confirm(`¿Está seguro de restaurar el respaldo del ${formatDate(backup.timestamp)}? Esto reemplazará todos los datos actuales.`)) {
-                        // Crear respaldo actual antes de restaurar
                         autoBackup();
                         
-                        // Restaurar datos
                         suppliers = backup.data.suppliers || [];
                         invoices = backup.data.invoices || [];
                         payments = backup.data.payments || [];
                         
-                        // Guardar en localStorage
                         localStorage.setItem('suppliers', JSON.stringify(suppliers));
                         localStorage.setItem('invoices', JSON.stringify(invoices));
                         localStorage.setItem('payments', JSON.stringify(payments));
                         
-                        // Restaurar configuraciones
                         if (backup.data.settings) {
                             Object.keys(backup.data.settings).forEach(key => {
                                 if (backup.data.settings[key]) {
@@ -1701,7 +1686,6 @@
                             });
                         }
                         
-                        // Registrar en auditoría
                         logAuditEvent('restore', 'Respaldo restaurado', { 
                             backupDate: backup.timestamp,
                             recordsRestored: {
@@ -1711,7 +1695,6 @@
                             }
                         });
                         
-                        // Actualizar todas las vistas
                         updateAllViews();
                         
                         showAlert('Respaldo restaurado exitosamente', 'success');
@@ -1724,9 +1707,8 @@
             reader.readAsText(file);
         }
 
-        // Configurar sincronización cloud (simulado)
+        // Configurar sincronización cloud
         function setupCloudSync() {
-            // Simulación de configuración cloud
             const provider = prompt('Seleccione proveedor cloud:\n1. Google Drive\n2. OneDrive\n3. Dropbox');
             
             if (provider) {
@@ -2238,7 +2220,6 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Header empresa
             doc.setFontSize(18);
             doc.setFont(undefined, 'bold');
             doc.text(SYSTEM_CONFIG.company, 105, 20, { align: 'center' });
@@ -2252,13 +2233,11 @@
             doc.text(`Fecha: ${formatDate(invoice.entryDate)}`, 20, 60);
             doc.text(`Vencimiento: ${formatDate(invoice.dueDate)}`, 20, 70);
             
-            // Proveedor
             doc.setFont(undefined, 'bold');
             doc.text('PROVEEDOR:', 20, 85);
             doc.setFont(undefined, 'normal');
             doc.text(invoice.supplierName, 20, 95);
             
-            // Detalles
             doc.setFont(undefined, 'bold');
             doc.text('DESCRIPCIÓN:', 20, 110);
             doc.setFont(undefined, 'normal');
@@ -2271,30 +2250,23 @@
                 doc.text(`Proyecto: ${invoice.project}`, 20, 140);
             }
             
-            // Monto
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
             doc.text(`MONTO TOTAL: ${formatCurrencyCLP(invoice.amount)}`, 20, 160);
             
-            // Estado
             doc.text(`ESTADO: ${invoice.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}`, 20, 170);
             
-            // Método de pago
             doc.text(`MÉTODO DE PAGO: ${capitalizeFirst(invoice.paymentMethod)}`, 20, 180);
             
-            // Info de pago si está pagado
             if (invoice.status === 'paid') {
                 doc.text(`FECHA DE PAGO: ${formatDate(invoice.paymentDate)}`, 20, 190);
                 doc.text(`PROCESADO POR: ${invoice.paidBy}`, 20, 200);
             }
             
-            // Footer
             doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
             doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
             doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
             
-            // Descargar
             doc.save(`Factura_${invoice.invoiceNumber}.pdf`);
             
             logAuditEvent('export', `PDF de factura generado: ${invoice.invoiceNumber}`, { invoiceId });
@@ -2309,7 +2281,6 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Header empresa
             doc.setFontSize(18);
             doc.setFont(undefined, 'bold');
             doc.text(SYSTEM_CONFIG.company, 105, 20, { align: 'center' });
@@ -2323,7 +2294,6 @@
             doc.text(`Referencia: ${payment.reference || 'N/A'}`, 20, 60);
             doc.text(`Banco: ${payment.bank || 'N/A'}`, 20, 70);
             
-            // Detalles
             doc.setFont(undefined, 'bold');
             doc.text('DETALLES DEL PAGO:', 20, 85);
             doc.setFont(undefined, 'normal');
@@ -2333,7 +2303,6 @@
             doc.text(`Método: ${capitalizeFirst(payment.paymentMethod)}`, 20, 125);
             doc.text(`Procesado por: ${payment.processedBy}`, 20, 135);
             
-            // Notas
             if (payment.notes) {
                 doc.setFont(undefined, 'bold');
                 doc.text('NOTAS:', 20, 150);
@@ -2341,13 +2310,11 @@
                 doc.text(payment.notes, 20, 160);
             }
             
-            // Footer
             doc.setFontSize(10);
             doc.text('Comprobante válido como constancia de pago', 105, 270, { align: 'center' });
             doc.text('Documento generado automáticamente por Sistema Empresarial de Pagos v2.0', 105, 280, { align: 'center' });
             doc.text(`Usuario: ${currentUser.name} | ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
             
-            // Descargar
             doc.save(`Comprobante_${payment.invoiceNumber}_${payment.paymentDate}.pdf`);
             
             logAuditEvent('export', `Comprobante de pago generado: ${payment.invoiceNumber}`, { paymentId });
@@ -2358,7 +2325,6 @@
         function exportToExcel() {
             const wb = XLSX.utils.book_new();
             
-            // Hoja de Facturas
             const invoiceData = invoices.map(inv => ({
                 'Número': inv.invoiceNumber,
                 'Proveedor': inv.supplierName,
@@ -2376,7 +2342,6 @@
             const ws1 = XLSX.utils.json_to_sheet(invoiceData);
             XLSX.utils.book_append_sheet(wb, ws1, "Facturas");
             
-            // Hoja de Proveedores
             const supplierData = suppliers.map(sup => ({
                 'Nombre': sup.name,
                 'RUT': sup.ruc,
@@ -2392,7 +2357,6 @@
             const ws2 = XLSX.utils.json_to_sheet(supplierData);
             XLSX.utils.book_append_sheet(wb, ws2, "Proveedores");
             
-            // Hoja de Pagos
             const paymentData = payments.map(pay => ({
                 'Fecha': pay.paymentDate,
                 'Factura': pay.invoiceNumber,
@@ -2408,7 +2372,6 @@
             const ws3 = XLSX.utils.json_to_sheet(paymentData);
             XLSX.utils.book_append_sheet(wb, ws3, "Pagos");
             
-            // Hoja de Auditoría (últimos 1000 registros)
             const auditData = auditLog.slice(0, 1000).map(log => ({
                 'Fecha/Hora': log.timestamp,
                 'Usuario': log.user,
@@ -2420,7 +2383,6 @@
             const ws4 = XLSX.utils.json_to_sheet(auditData);
             XLSX.utils.book_append_sheet(wb, ws4, "Auditoría");
             
-            // Descargar
             const fileName = `${SYSTEM_CONFIG.company}_Pagos_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, fileName);
             
@@ -2455,7 +2417,6 @@
 
         // Eliminar proveedor
         function deleteSupplier(supplierId) {
-            // Verificar si tiene facturas asociadas
             const hasInvoices = invoices.some(inv => inv.supplierId == supplierId);
             if (hasInvoices) {
                 showAlert('No se puede eliminar el proveedor porque tiene facturas asociadas', 'danger');
@@ -2495,7 +2456,6 @@
             document.getElementById('upcomingCount').textContent = upcomingInvoices.length;
             document.getElementById('supplierCount').textContent = suppliers.length;
             
-            // Actualizar alerta
             const alertMessage = document.getElementById('alertMessage');
             if (overdueInvoices.length > 0) {
                 alertMessage.textContent = `⚠️ Tienes ${overdueInvoices.length} factura(s) vencida(s) que requieren atención inmediata`;
@@ -3535,4 +3495,3 @@
     </script>
 </body>
 </html>
-
